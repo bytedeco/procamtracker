@@ -1,7 +1,7 @@
 =ProCamTracker=
 
 ==Introduction==
-ProCamTracker is a user-friendly computer application to turn a perfectly normal pair of projector and camera into a system that can track without markers a real world object (currently limited to planar surfaces), while simultaneously projecting on its surface geometrically corrected video images using the direct image alignment algorithm included in JavaCV ( http://code.google.com/p/javacv/ ), an open source library I developed as part of my PhD research. More information about the algorithm itself can be found in the related CVPR 2010 paper, which you may cite if you find this software useful. Thank you.
+ProCamTracker is a user-friendly computer application to turn a perfectly normal pair of projector and camera into a system that can track without markers a real world object (currently limited to matte planar surfaces), while simultaneously projecting on its surface geometrically corrected video images using the direct image alignment algorithm included in JavaCV ( http://code.google.com/p/javacv/ ), an open source library I developed as part of my PhD research. More information about the algorithm itself can be found in the related CVPR 2010 paper, which you may cite if you find this software useful. Thank you.
 
 Samuel Audet, Masatoshi Okutomi, and Masayuki Tanaka. Direct Image Alignment of Projector-Camera Systems with Planar Surfaces. In Proceedings of the 2010 IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR 2010). IEEE Computer Society, June 2010. http://www.ok.ctrl.titech.ac.jp/~saudet/publications/cvpr2010.pdf
 
@@ -45,7 +45,7 @@ Select a suitable FrameGrabber for your system, and fill in either `deviceFile`,
 2. Projector Settings
 As with the camera settings, fill in the `parametersFile` field, but also confirm that the `screenNumber` corresponds to the one of the projector. 
 3. TrackingWorker
-Locate an image file (PNG, JPG, etc.) or video file (AVI, MP4, etc.) you would like to project on some planar surface and specify its path in the `projectorImageFile` field.
+Locate an image file (PNG, JPG, etc.) or video file (AVI, MP4, etc.) you would like to project on some planar surface and specify its path in the `projectorImageFile` or `projectorVideoFile` field respectively.
 
 Once you have modified all the desired settings, since the application may crash during the operations described below, please save them in an XML file via the "Settings" menu.
 
@@ -74,6 +74,13 @@ I am currently an active member of the Okutomi & Tanaka Laboratory, Tokyo Instit
 
 
 ==Changes==
+===April 5, 2010===
+ * Fixed mouse cursor under Windows when `objectRoiAcquisition == USER`
+ * Added new `VirtualBall` visual element
+ * Fixed up the `Chronometer` a bit
+ * Added `projectorVideoFile` setting, whose images get merged with `projectorImageFile`
+ * Some bugs fixed for FFmpeg
+
 ===March 21, 2010===
  * Initial release
 

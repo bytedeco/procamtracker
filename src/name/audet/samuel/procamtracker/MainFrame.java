@@ -46,7 +46,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -229,6 +228,7 @@ public class MainFrame extends javax.swing.JFrame implements
     MarkerDetector .Settings markerDetectorSettings;
     LMImageAligner .Settings alignerSettings;
     TrackingWorker .Settings trackingSettings;
+    VirtualBall    .Settings virtualBallSettings;
     final File DEFAULT_SETTINGS_FILE = new File("settings.pct");
     File settingsFile = null;
 
@@ -279,9 +279,12 @@ public class MainFrame extends javax.swing.JFrame implements
         editors.put("parametersFilename", null);
         editors.put("deviceFilename", null);
         editors.put("objectImage", null);
+        editors.put("outputVideoFilename", null);
         editors.put("objectImageFilename", null);
         editors.put("projectorImageFilename", null);
-        editors.put("outputVideoFilename", null);
+        editors.put("projectorVideoFilename", null);
+        editors.put("initialRoiPts", null);
+        editors.put("initialPosition", null);
 
         if (cameraSettings == null) {
             cameraSettings = new CameraDevice.CalibratedSettings();
@@ -324,9 +327,15 @@ public class MainFrame extends javax.swing.JFrame implements
         BeanNode trackingNode = new CleanBeanNode<TrackingWorker.Settings>
                 (trackingSettings, editors, "TrackingWorker");
 
+        if (virtualBallSettings == null) {
+            virtualBallSettings = new VirtualBall.Settings();
+        }
+        BeanNode virtualBallNode = new CleanBeanNode<VirtualBall.Settings>
+                (virtualBallSettings, editors, "VirtualBall");
+
         Children children = new Children.Array();
         children.add(new Node[] { cameraNode, projectorNode, objectFinderNode,
-                                 markerDetectorNode, alignerNode, trackingNode });
+                markerDetectorNode, alignerNode, trackingNode, virtualBallNode });
 
         Node root = new AbstractNode(children);
         root.setName("Settings");
@@ -341,6 +350,7 @@ public class MainFrame extends javax.swing.JFrame implements
             markerDetectorSettings = null;
             alignerSettings = null;
             trackingSettings = null;
+            virtualBallSettings = null;
 
             trackingWorker = null;
         } else {
@@ -351,6 +361,7 @@ public class MainFrame extends javax.swing.JFrame implements
             markerDetectorSettings = (MarkerDetector.Settings)decoder.readObject();
             alignerSettings = (LMImageAligner.Settings)decoder.readObject();
             trackingSettings = (TrackingWorker.Settings)decoder.readObject();
+            virtualBallSettings = (VirtualBall.Settings)decoder.readObject();
             decoder.close();
         }
 
@@ -383,6 +394,7 @@ public class MainFrame extends javax.swing.JFrame implements
         encoder.writeObject(markerDetectorSettings);
         encoder.writeObject(alignerSettings);
         encoder.writeObject(trackingSettings);
+        encoder.writeObject(virtualBallSettings);
         encoder.close();
     }
 
@@ -756,6 +768,7 @@ public class MainFrame extends javax.swing.JFrame implements
             trackingWorker.markerDetectorSettings = markerDetectorSettings;
             trackingWorker.alignerSettings = alignerSettings;
             trackingWorker.trackingSettings = trackingSettings;
+            trackingWorker.virtualBallSettings = virtualBallSettings;
             try {
                 trackingWorker.init();
                 trackingWorker.execute();
@@ -948,9 +961,10 @@ public class MainFrame extends javax.swing.JFrame implements
 
                     // Add property editors from NetBeans
                     String[] searchPath = PropertyEditorManager.getEditorSearchPath();
-                    searchPath = Arrays.copyOf(searchPath, searchPath.length+1);
-                    searchPath[searchPath.length-1] = "org.netbeans.beaninfo.editors";
-                    PropertyEditorManager.setEditorSearchPath(searchPath);
+                    String[] newSearchPath = new String[searchPath.length+1];
+                    newSearchPath[0] = "org.netbeans.beaninfo.editors";
+                    System.arraycopy(searchPath, 0, newSearchPath, 1, searchPath.length);
+                    PropertyEditorManager.setEditorSearchPath(newSearchPath);
                     PropertyEditorManager.registerEditor(String[].class, StringArrayEditor.class);
                     PropertyEditorManager.registerEditor(double[].class, DoubleArrayEditor.class);
 
