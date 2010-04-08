@@ -260,8 +260,7 @@ public class TrackingWorker extends SwingWorker {
         g.setColor(Color.BLACK); g.drawRect(cx-6, cy-6, 12, 12);
         g.setColor(Color.WHITE); g.drawRect(cx-2, cy-2,  4,  4);
         g.setColor(Color.BLACK); g.drawRect(cx-1, cy-1,  2,  2);
-        Cursor cursor = t.createCustomCursor(cursorImage, d.width == 15 && d.height == 15 ?
-                    new Point(cx, cy) : new Point(cx+1, cy+1), null);
+        Cursor cursor = t.createCustomCursor(cursorImage, new Point(cx, cy), null);
         monitorWindows[0].setCursor(cursor);
 
         final int[] count = { 0 };
