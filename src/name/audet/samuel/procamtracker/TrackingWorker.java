@@ -335,11 +335,15 @@ public class TrackingWorker extends SwingWorker {
 
         markerDetector = new MarkerDetector(markerDetectorSettings);
         Marker[] markersin = markerDetector.detect(objectImage, false);
-        String infoLogString = "initial marker centers = ";
-        int i = 0;
-        for (Marker m : markersin) {
-            double[] c = m.getCenter();
-            infoLogString += i++ + ": (" + c[0] + ", " + c[1] + ")  ";
+        String infoLogString = "objectImage marker centers = ";
+        for (int i = 0; i < 4; i++) {
+            for (Marker m : markersin) {
+                if (m.id == i) {
+                    double[] c = m.getCenter();
+                    infoLogString += m.id + ": (" + c[0] + ", " + c[1] + ")  ";
+                    break;
+                }
+            }
         }
         logger.info(infoLogString);
         if (markersin == null || markersin.length == 0) {
@@ -349,6 +353,7 @@ public class TrackingWorker extends SwingWorker {
         MarkedPlane markedPlane = new MarkedPlane(objectImage.width, objectImage.height, markersin, 1);
 
         Marker[] markersout = markerDetector.detect(grabbedImage, false);
+        infoLogString = "initial marker centers = ";
         if (markersout == null || markersout.length == 0 ||
                 markedPlane.getTotalWarp(markersout, tempH, true) == Double.POSITIVE_INFINITY) {
             throw new Exception("Error: MarkerDetector failed to match markers in the grabbed image.");
@@ -358,16 +363,18 @@ public class TrackingWorker extends SwingWorker {
         cvPerspectiveTransform(srcPts, dstPts, tempH);
         dstPts.get(roiPts);
 
-        for (i = 0; i < 4; i++) {
+        for (int i = 0; i < 4; i++) {
             for (Marker m : markersout) {
                 if (m.id == i) {
                     double[] c = m.getCenter();
+                    infoLogString += m.id + ": (" + c[0] + ", " + c[1] + ")  ";
                     srcPts.put(i*2  , c[0]);
                     srcPts.put(i*2+1, c[1]);
                     break;
                 }
             }
         }
+        logger.info(infoLogString);
 
         return roiPts;
     }
