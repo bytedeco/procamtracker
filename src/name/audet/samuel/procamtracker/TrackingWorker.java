@@ -577,10 +577,12 @@ public class TrackingWorker extends SwingWorker {
                     projectorDevice.imageHeight, IPL_DEPTH_8U, initImage.nChannels);
             if (trackingSettings.projectorImageFile == null && trackingSettings.projectorVideoFile == null) {
                 // if no image file is given, use our own special fractal as image :)
-                imageToProject = IplImage.create(projectorDevice.imageWidth,
+                imageToProject = IplImage.createCompatible(distortedProjectorImage);
+                IplImage tempFloat = IplImage.create(projectorDevice.imageWidth,
                         projectorDevice.imageHeight, IPL_DEPTH_32F, initImage.nChannels);
                 projectorDevice.getRectifyingHomography(cameraDevice, tempH);
-                JavaCV.fractalTriangleWave(imageToProject, tempH);
+                JavaCV.fractalTriangleWave(tempFloat, tempH);
+                cvConvertScale(tempFloat, imageToProject, 255, 0);
             } else if (trackingSettings.projectorVideoFile != null) {
                 if (trackingSettings.projectorImageFile != null) {
                     // loads alpha channel
