@@ -46,7 +46,7 @@ import name.audet.samuel.javacv.FrameGrabber;
 import name.audet.samuel.javacv.FrameGrabber.ColorMode;
 import name.audet.samuel.javacv.FrameRecorder;
 import name.audet.samuel.javacv.JavaCV;
-import name.audet.samuel.javacv.LMImageAligner;
+import name.audet.samuel.javacv.GNImageAligner;
 import name.audet.samuel.javacv.MarkedPlane;
 import name.audet.samuel.javacv.Marker;
 import name.audet.samuel.javacv.MarkerDetector;
@@ -202,7 +202,7 @@ public class TrackingWorker extends SwingWorker {
     ProjectorDevice.Settings projectorSettings;
     ObjectFinder   .Settings objectFinderSettings;
     MarkerDetector .Settings markerDetectorSettings;
-    LMImageAligner .Settings alignerSettings;
+    GNImageAligner .Settings alignerSettings;
                     Settings trackingSettings;
     VirtualBall    .Settings virtualBallSettings;
 
@@ -214,7 +214,7 @@ public class TrackingWorker extends SwingWorker {
     private double[] roiPts = null;
     private ProCamTransformer transformer;
     private ProCamTransformer.Parameters parameters, lastParameters, tempParameters;
-    private LMImageAligner aligner;
+    private GNImageAligner aligner;
     private ReflectanceInitializer reflectanceInitializer;
     private MarkerDetector markerDetector;
 
@@ -339,7 +339,7 @@ public class TrackingWorker extends SwingWorker {
             for (Marker m : markersin) {
                 if (m.id == i) {
                     double[] c = m.getCenter();
-                    infoLogString += m.id + ": (" + c[0] + ", " + c[1] + ")  ";
+                    infoLogString += m.id + ": (" + (float)c[0] + ", " + (float)c[1] + ")  ";
                     break;
                 }
             }
@@ -366,7 +366,7 @@ public class TrackingWorker extends SwingWorker {
             for (Marker m : markersout) {
                 if (m.id == i) {
                     double[] c = m.getCenter();
-                    infoLogString += m.id + ": (" + c[0] + ", " + c[1] + ")  ";
+                    infoLogString += m.id + ": (" + (float)c[0] + ", " + (float)c[1] + ")  ";
                     srcPts.put(i*2  , c[0]);
                     srcPts.put(i*2+1, c[1]);
                     break;
@@ -386,7 +386,7 @@ public class TrackingWorker extends SwingWorker {
         try {
             grabbedImage = frameGrabber.grab();
             // gamma "uncorrection", linearization
-            double gamma = cameraSettings.getResponseGamma();
+            double gamma = frameGrabber.getGamma();
             if (gamma != 1.0) {
                 grabbedImage.applyGamma(gamma);
             }
@@ -515,8 +515,7 @@ public class TrackingWorker extends SwingWorker {
             projectorDevice.distort(projectorImages[projectorImageIndex], distortedProjectorImage);
             cvSetImageROI(projectorImages[projectorImageIndex], maxroi);
             cvSetImageROI(distortedProjectorImage, maxroi);
-            projectorFrame.showImage(distortedProjectorImage.
-                    getBufferedImage(1.0/projectorSettings.getResponseGamma()));
+            projectorFrame.showImage(distortedProjectorImage);
         }
     }};
 
@@ -628,10 +627,11 @@ public class TrackingWorker extends SwingWorker {
             projectorImageIndex = 0;
 
             // grab the three frames for initialization
-            LMImageAligner.Settings s = alignerSettings.clone();
-            // remove settings that might reduce accuracy
-            s.setZeroThresholds(new double[] { 0.0 });
+            GNImageAligner.Settings s = alignerSettings.clone();
+            // prepare settings for maximum accuracy
             s.setErrorDecreaseMin(0);
+            s.setLineSearch(new double[] { 1.0, 1.0/2, 1.0/4, 1.0/8, 1.0/16, 1.0/32, 1.0/64, 1.0/128 });
+            s.setZeroThresholds(new double[] { 0.0 });
             reflectanceInitializer = new ReflectanceInitializer(cameraDevice, projectorDevice, initImage.nChannels, s);
             IplImage[] projectorInitFloatImages = reflectanceInitializer.getProjectorImages();
             IplImage[] projectorInitImages   = new IplImage[projectorInitFloatImages.length];
@@ -643,15 +643,11 @@ public class TrackingWorker extends SwingWorker {
                 cameraInitFloatImages[i] = IplImage.create(initImage.width, initImage.height, IPL_DEPTH_32F, initImage.nChannels);
                 cvConvertScale(projectorInitFloatImages[i], projectorInitImages[i], 255, 0);
                 projectorDevice.distort(projectorInitImages[i], distortedProjectorImage);
-                // apply gamma correction
-                if (projectorSettings.getResponseGamma() != 1.0) {
-                    distortedProjectorImage.applyGamma(1.0/projectorSettings.getResponseGamma());
-                }
                 cvCopy(distortedProjectorImage, projectorInitImages[i]);
             }
             for (int i = 0; i < projectorInitImages.length; i++) {
                 if (projectorFrame != null) {
-                    projectorFrame.showImage(projectorInitImages[i].getBufferedImage(1.0));
+                    projectorFrame.showImage(projectorInitImages[i]);
                     projectorFrame.waitLatency();
                 }
                 frameGrabber.trigger();
@@ -659,12 +655,14 @@ public class TrackingWorker extends SwingWorker {
             }
             for (int i = 0; i < cameraInitImages.length; i++) {
                 // for gamma "uncorrection", linearization
-                if (cameraSettings.getResponseGamma() != 1.0) {
-                    cameraInitImages[i].applyGamma(cameraSettings.getResponseGamma());
+                double gamma = frameGrabber.getGamma();
+                if (gamma != 1.0) {
+                    cameraInitImages[i].applyGamma(gamma);
                 }
                 cameraDevice.undistort(cameraInitImages[i], undistortedCameraImage);
                         cvCopy(undistortedCameraImage, cameraInitImages[i]);
-                cvConvertScale(undistortedCameraImage, cameraInitFloatImages[i], 1.0/255.0, 0);
+                cvConvertScale(undistortedCameraImage, cameraInitFloatImages[i],
+                        1.0/undistortedCameraImage.getMaxIntensity(), 0);
 
                 if (frameRecorder != null) {
                     undistortedCameraImage.applyGamma(1/2.2);
@@ -685,7 +683,8 @@ public class TrackingWorker extends SwingWorker {
                                             (int)Math.round(initImage.height*scale));
                             c.setTitle(monitorWindowsTitles[index] + " (" +
                                     initImage.width + " x " + initImage.height + "  " +
-                                    (initImage.depth&~IPL_DEPTH_SIGN) + " bpp) - ProCamTracker");
+                                    (initImage.depth&~IPL_DEPTH_SIGN) + " bpp  gamma = " +
+                                    frameGrabber.getGamma() + ") - ProCamTracker");
                         }
                     });
                 }
@@ -759,7 +758,7 @@ public class TrackingWorker extends SwingWorker {
             } else {
                 dstPts.put(0.0, 0.0,  projectorImages[0].width, 0.0,
                         projectorImages[0].width, projectorImages[0].height,  0.0, projectorImages[0].height);
-                cvConvertScale(frameImage, projectorImages[0], 255.0, 0);
+                cvCopy(frameImage, projectorImages[0]);
             }
             if (trackingSettings.virtualBallEnabled) {
                 virtualBallSettings.setInitialRoiPts(dstPts.get());
@@ -794,7 +793,7 @@ public class TrackingWorker extends SwingWorker {
             }
             frameGrabber.trigger();
             projectorImageIndex = 1; doCamera.run();
-            aligner = new LMImageAligner(transformer, parameters, reflectance, roiPts,
+            aligner = new GNImageAligner(transformer, parameters, reflectance, roiPts,
                     undistortedCameraImage, alignerSettings);
 
             int timeMax = trackingSettings.getIteratingTimeMax();
@@ -802,8 +801,8 @@ public class TrackingWorker extends SwingWorker {
             double totalError   = 0;
             int totalErrorCount = 0;
             double[] delta = new double[parameters.size()+1];
-            long[][] iterationTime = new long[alignerSettings.getPyramidLevels()][alignerSettings.getLMLambdas().length];
-            int[][] iterationCount = new int[alignerSettings.getPyramidLevels()][alignerSettings.getLMLambdas().length];
+            long[] iterationTime = new long[alignerSettings.getPyramidLevels()];
+            int[] iterationCount = new int[alignerSettings.getPyramidLevels()];
             int framesCount = 0;
             while (!isCancelled() && grabbedImage != null) {
                 framesCount++;
@@ -812,14 +811,13 @@ public class TrackingWorker extends SwingWorker {
                 int iterations = 0;
                 while (!converged) {
                     int p = aligner.getPyramidLevel();
-                    int l = aligner.getLmLambdaIndex();
 
                     long iterationStartTime = System.currentTimeMillis();
                     converged = aligner.iterate(delta);
                     long iterationEndTime = System.currentTimeMillis();
 
-                    iterationTime[p][l] +=  iterationEndTime - iterationStartTime;
-                    iterationCount[p][l]++;
+                    iterationTime[p] +=  iterationEndTime - iterationStartTime;
+                    iterationCount[p]++;
 
                     if (timeMax > 0 && iterationEndTime-iterationsStartTime > timeMax) {
                         converged = true;
@@ -977,12 +975,10 @@ public class TrackingWorker extends SwingWorker {
             int totalIterations = 0;
             infoLogString = "[pyramidLevel, lmLambdaIndex] averageTime averageIterations\n";
             for (int i = 0; i < iterationTime.length; i++) {
-                for (int j = 0; j < iterationTime[i].length; j++) {
-                    infoLogString += "[" + i + ", " + j + "] " + (iterationCount[i][j] == 0 ? 0 :
-                        (float)iterationTime[i][j]/iterationCount[i][j] + " " +
-                        (float)iterationCount[i][j]/framesCount) + "\n";
-                    totalIterations += iterationCount[i][j];
-                }
+                infoLogString += "[" + i + "] " + (iterationCount[i] == 0 ? 0 :
+                    (float)iterationTime[i]/iterationCount[i] + " " +
+                    (float)iterationCount[i]/framesCount) + "\n";
+                totalIterations += iterationCount[i];
             }
             infoLogString += "Total average number of iterations: " + (float)totalIterations/framesCount;
             logger.info(infoLogString);

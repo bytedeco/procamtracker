@@ -86,7 +86,7 @@ import org.openide.windows.InputOutput;
 import name.audet.samuel.javacv.CameraDevice;
 import name.audet.samuel.javacv.FrameGrabber;
 import name.audet.samuel.javacv.JavaCvErrorCallback;
-import name.audet.samuel.javacv.LMImageAligner;
+import name.audet.samuel.javacv.GNImageAligner;
 import name.audet.samuel.javacv.MarkerDetector;
 import name.audet.samuel.javacv.ObjectFinder;
 import name.audet.samuel.javacv.ProjectorDevice;
@@ -226,7 +226,7 @@ public class MainFrame extends javax.swing.JFrame implements
     ProjectorDevice.Settings projectorSettings;
     ObjectFinder   .Settings objectFinderSettings;
     MarkerDetector .Settings markerDetectorSettings;
-    LMImageAligner .Settings alignerSettings;
+    GNImageAligner .Settings alignerSettings;
     TrackingWorker .Settings trackingSettings;
     VirtualBall    .Settings virtualBallSettings;
     final File DEFAULT_SETTINGS_FILE = new File("settings.pct");
@@ -316,10 +316,10 @@ public class MainFrame extends javax.swing.JFrame implements
                 (markerDetectorSettings, editors, "MarkerDetector");
 
         if (alignerSettings == null) {
-            alignerSettings = new LMImageAligner.Settings();
+            alignerSettings = new GNImageAligner.Settings();
         }
-        BeanNode alignerNode = new CleanBeanNode<LMImageAligner.Settings>
-                (alignerSettings, editors, "LMImageAligner");
+        BeanNode alignerNode = new CleanBeanNode<GNImageAligner.Settings>
+                (alignerSettings, editors, "GNImageAligner");
 
         if (trackingSettings == null) {
             trackingSettings = new TrackingWorker.Settings();
@@ -359,7 +359,7 @@ public class MainFrame extends javax.swing.JFrame implements
             projectorSettings = (ProjectorDevice.Settings)decoder.readObject();
             objectFinderSettings = (ObjectFinder.Settings)decoder.readObject();
             markerDetectorSettings = (MarkerDetector.Settings)decoder.readObject();
-            alignerSettings = (LMImageAligner.Settings)decoder.readObject();
+            alignerSettings = (GNImageAligner.Settings)decoder.readObject();
             trackingSettings = (TrackingWorker.Settings)decoder.readObject();
             virtualBallSettings = (VirtualBall.Settings)decoder.readObject();
             decoder.close();

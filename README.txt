@@ -74,6 +74,11 @@ I am currently an active member of the Okutomi & Tanaka Laboratory, Tokyo Instit
 
 
 ==Changes==
+===April 16, 2010===
+ * Modified a few things to get better default behavior of gamma correction
+ * `Camera.triggerFlushSize` now defaults to 5 (only affects `OpenCVFrameGrabber` and `FFmpegFrameGrabber`)
+ * Replaced `LMImageAligner` by `GNImageAligner`, a more appropriate name for Gauss-Newton with `lineSearch`
+
 ===April 8, 2010===
  * Added support for OpenCV 2.1
 
