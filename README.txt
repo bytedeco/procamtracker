@@ -1,15 +1,15 @@
 =ProCamTracker=
 
 ==Introduction==
-ProCamTracker is a user-friendly computer application to turn a perfectly normal pair of projector and camera into a system that can track without markers a real world object (currently limited to matte planar surfaces), while simultaneously projecting on its surface geometrically corrected video images using the direct image alignment algorithm included in JavaCV ( http://code.google.com/p/javacv/ ), an open source library I developed as part of my PhD research. More information about the algorithm itself can be found in the related CVPR 2010 paper, which you may cite if you find this software useful. Thank you.
+ProCamTracker is a user-friendly computer application to turn a perfectly normal pair of projector and camera into a system that can track without markers a real world object (currently limited to matte planar surfaces), while simultaneously projecting on its surface geometrically corrected video images using the direct image alignment algorithm included in JavaCV ( http://code.google.com/p/javacv/ ), an open source library I developed as part of my doctoral research. More information about the algorithm itself can be found in the related CVPR 2010 paper, which you may cite if you find this software useful. Thank you.
 
-Samuel Audet, Masatoshi Okutomi, and Masayuki Tanaka. Direct Image Alignment of Projector-Camera Systems with Planar Surfaces. In Proceedings of the 2010 IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR 2010). IEEE Computer Society, June 2010. http://www.ok.ctrl.titech.ac.jp/~saudet/publications/cvpr2010.pdf
+Samuel Audet, Masatoshi Okutomi, and Masayuki Tanaka. Direct Image Alignment of Projector-Camera Systems with Planar Surfaces. The 23rd IEEE Conference on Computer Vision and Pattern Recognition (CVPR 2010). IEEE Computer Society, June 2010. http://www.ok.ctrl.titech.ac.jp/~saudet/publications/cvpr2010.pdf
 
 This method requires a geometrically and color calibrated projector-camera system. To perform the calibration, I recommend the tool I previously released for that purpose, ProCamCalib ( http://www.ok.ctrl.titech.ac.jp/~saudet/procamcalib/ ).
 
 
 ==Required Software==
-I wrote the great majority of ProCamTracker in Java and it should run on any platform where an implementation of Java SE 1.6 exists. The binary distribution also contains 32-bit and 64-bit x86 versions of natively compiled code (cvkernels) for both Linux and Windows. (If anyone compiles it under Mac OS X or other platforms, please send me the binary and I will include it.) Still, additional software is required.
+I wrote the great majority of ProCamTracker in Java and it should run on any platform where an implementation of Java SE 1.6 exists. The binary distribution also contains 32-bit and 64-bit x86 versions of natively compiled code (`cvkernels`) for both Linux and Windows. (If anyone compiles it under Mac OS X or another platform, please send me the binary and I will include it.) Still, additional software is required.
 
 Please install the following before running ProCamTracker:
  * An implementation of Java SE 6
@@ -26,9 +26,9 @@ Please install the following before running ProCamTracker:
 If you would like to use the MarkerDetector module, you will also need to install:
  * ARToolKitPlus 2.1.1c  http://code.google.com/p/javacv/downloads/list
 
-Additionnally, for IIDC/DCAM cameras only:
- * libdc1394 2.1.2 (Linux and Mac OS X) http://sourceforge.net/projects/libdc1394/files/
- * PGR FlyCapture 1 or 2 (Windows only) http://www.ptgrey.com/products/pgrflycapture/
+Additionally, for IIDC/DCAM cameras only:
+ * libdc1394 2.1.2 (Linux and Mac OS X)  http://sourceforge.net/projects/libdc1394/files/
+ * PGR FlyCapture 1 or 2 (Windows only)  http://www.ptgrey.com/products/pgrflycapture/
 
 Further, camera input via FFmpeg is also supported, but needs FFmpeg 0.5 or more recent:
  * Source code  http://ffmpeg.org/download.html
@@ -41,7 +41,7 @@ Under Linux, Mac OS X, and other Unix variants, execute either `procamtracker-na
 After launch, the user interface that appears allows the user to change settings for the camera, the projector, and the various modules of the tracking algorithm. I describe next a typical usage scenario and will not explain all the settings in details. The default values of the ones I do not mention should be good enough for most cases, but please feel free to experiment.
 
 1. Camera Settings
-Select a suitable FrameGrabber for your system, and fill in either `deviceFile`, `deviceNumber`, or `devicePath` as appropriate. Place the path to the `calibration.yaml` file created by ProCamCalib in the `parametersFile` field, while the `name` field must correspond to an entry in that file. Finally, the value of `nominalDistance` will be used as initial depth for the initialization algorithm of the image aligner.
+Select a suitable `FrameGrabber` for your system, and fill in either `deviceFile`, `deviceNumber`, or `devicePath` as appropriate. Place the path to the `calibration.yaml` file created by ProCamCalib in the `parametersFile` field, while the `name` field must correspond to an entry in that file. Finally, the value of `nominalDistance` will be used as initial depth for the initialization algorithm of the image aligner.
 2. Projector Settings
 As with the camera settings, fill in the `parametersFile` field, but also confirm that the `screenNumber` corresponds to the one of the projector. 
 3. TrackingWorker
@@ -60,9 +60,9 @@ I make all the source code available at the URL below. It is divided into two pa
  * ProCamTracker, which implements a user-friendly interface based on JavaCV
 
 In addition to the software above, to modify and build the source code you will need:
- * Whatever native tools needed to build the native cvkernels module of JavaCV
+ * Whatever native tools needed to build the native `cvkernels` module of JavaCV
  * NetBeans 6.8  http://www.netbeans.org/downloads/
- * Java Native Access 3.2.4  https://jna.dev.java.net/
+ * Java Native Access 3.2.5  http://jna.dev.java.net/
 
 (The icons were shamelessly copied from the source code repository of NetBeans. Also licensed under the GPLv2.)
 
@@ -74,6 +74,9 @@ I am currently an active member of the Okutomi & Tanaka Laboratory, Tokyo Instit
 
 
 ==Changes==
+===May 30, 2010===
+ * Fixed speed setting problem with the `FlyCaptureFrameGrabber`
+
 ===April 16, 2010===
  * Modified a few things to get better default behavior of gamma correction
  * `Camera.triggerFlushSize` now defaults to 5 (only affects `OpenCVFrameGrabber` and `FFmpegFrameGrabber`)

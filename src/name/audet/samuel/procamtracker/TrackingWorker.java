@@ -269,7 +269,7 @@ public class TrackingWorker extends SwingWorker {
                 if (count[0] < 8) {
                     roiPts[count[0]++] = e.getX()/trackingSettings.getMonitorWindowsScale();
                     roiPts[count[0]++] = e.getY()/trackingSettings.getMonitorWindowsScale();
-                    Graphics2D g = monitorWindows[0].acquireGraphics();
+                    Graphics2D g = monitorWindows[0].createGraphics();
                     g.setColor(Color.RED);
                     g.drawLine(e.getX()-7, e.getY(), e.getX()+7, e.getY());
                     g.drawLine(e.getX(), e.getY()-7, e.getX(), e.getY()+7);
