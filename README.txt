@@ -1,7 +1,7 @@
 =ProCamTracker=
 
 ==Introduction==
-ProCamTracker is a user-friendly computer application to turn a perfectly normal pair of projector and camera into a system that can track without markers a real world object (currently limited to matte planar surfaces), while simultaneously projecting on its surface geometrically corrected video images using the direct image alignment algorithm included in JavaCV ( http://code.google.com/p/javacv/ ), an open source library I developed as part of my doctoral research. More information about the algorithm itself can be found in the related CVPR 2010 paper, which you may cite if you find this software useful. Thank you.
+ProCamTracker is a user-friendly computer application to turn a perfectly normal pair of color camera and projector into a system that can track without markers a real world object (currently limited to matte planes), while simultaneously projecting on its surface geometrically corrected video images using the direct image alignment algorithm included in JavaCV ( http://code.google.com/p/javacv/ ), an open source library I developed as part of my doctoral research. More information about the algorithm itself can be found in the related CVPR 2010 paper below, which you may cite if you find this software useful. Thank you.
 
 Samuel Audet, Masatoshi Okutomi, and Masayuki Tanaka. Direct Image Alignment of Projector-Camera Systems with Planar Surfaces. The 23rd IEEE Conference on Computer Vision and Pattern Recognition (CVPR 2010). IEEE Computer Society, June 2010. http://www.ok.ctrl.titech.ac.jp/~saudet/publications/cvpr2010.pdf
 
@@ -23,14 +23,14 @@ Please install the following before running ProCamTracker:
  * ProCamTracker runs _a lot_ faster under the "server" JVM than the "client" JVM, but because of its bigger size, not all distributions of Java come with the server one.
  * The precompiled binaries of OpenCV 2.0 for Windows are incompatible with Sun JDK 6. Please use the ones of OpenCV 2.1.
 
-If you would like to use the MarkerDetector module, you will also need to install:
+If you would like to use the `MarkerDetector` module, you will also need to install:
  * ARToolKitPlus 2.1.1c  http://code.google.com/p/javacv/downloads/list
 
 Additionally, for IIDC/DCAM cameras only:
  * libdc1394 2.1.2 (Linux and Mac OS X)  http://sourceforge.net/projects/libdc1394/files/
  * PGR FlyCapture 1 or 2 (Windows only)  http://www.ptgrey.com/products/pgrflycapture/
 
-Further, camera input via FFmpeg is also supported, but needs FFmpeg 0.5 or more recent:
+Further, camera input via FFmpeg is also supported, but needs FFmpeg 0.6 or more recent:
  * Source code  http://ffmpeg.org/download.html
  * Precompiled Windows DLLs  http://ffmpeg.arrozcru.org/autobuilds/
 
@@ -47,7 +47,7 @@ As with the camera settings, fill in the `parametersFile` field, but also confir
 3. TrackingWorker
 Locate an image file (PNG, JPG, etc.) or video file (AVI, MP4, etc.) you would like to project on some planar surface and specify its path in the `projectorImageFile` or `projectorVideoFile` field respectively.
 
-Once you have modified all the desired settings, since the application may crash during the operations described below, please save them in an XML file via the "Settings" menu.
+Once you have modified all the desired settings, since the application may crash during the operations described below, please save them in an XML file via the Settings menu.
 
 Now, we are ready to start the tracking algorithm. From the Tracking menu, click on the Start item. If all goes well, a window entitled "Initial Alignment" should appear containing an image captured from your camera. In this window, click four different points that delimit the region of interest on your planar surface that you would like to map to the four corners of the projector image, in this order: upper left, upper right, lower right, and lower left. After the last click, tracking should start within a few seconds. You may then begin to move your planar surface and see if the system can successfully track it.
 
@@ -74,6 +74,11 @@ I am currently an active member of the Okutomi & Tanaka Laboratory, Tokyo Instit
 
 
 ==Changes==
+===July 30, 2010===
+ * Fixed crash that would occur in `CanvasFrame` for some video drivers
+ * Fixed crash inside the code for direct alignment caused by the ROI getting set outside the image plane
+ * Added `deltaScale` and `tryToFixPlane` settings to `GNImageAligner` (the first used as increment, randomly selected forward or backward, for finite difference), which sometimes help to jump over local minima
+
 ===May 30, 2010===
  * Fixed speed setting problem with the `FlyCaptureFrameGrabber`
 

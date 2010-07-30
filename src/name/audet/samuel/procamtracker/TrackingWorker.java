@@ -289,6 +289,16 @@ public class TrackingWorker extends SwingWorker {
             roiPts.wait();
         }
 
+//        if (monitorWindows != null) {
+//            for (int i = 0; i < monitorWindows.length; i++) {
+//                if (monitorWindows[i] != null) {
+//                    monitorWindows[i].dispose();
+//                    monitorWindows[i] = null;
+//                }
+//            }
+//            monitorWindows = null;
+//        }
+
         return roiPts;
     }
 
@@ -487,10 +497,10 @@ public class TrackingWorker extends SwingWorker {
 
         // there seems to be something funny with memory alignment and
         // ROIs, so let's align our ROI to a 16 byte boundary just in case..
-        roi.x      = (int)Math.floor(minX/16)*16;
-        roi.y      = (int)Math.floor(minY);
-        roi.width  = (int)Math.ceil (maxX/16)*16 - roi.x;
-        roi.height = (int)Math.ceil (maxY)       - roi.y;
+        roi.x      = Math.max(0, (int)Math.floor(minX/16)*16);
+        roi.y      = Math.max(0, (int)Math.floor(minY));
+        roi.width  = Math.min(projectorImages[projectorImageIndex].width,  (int)Math.ceil (maxX/16)*16) - roi.x;
+        roi.height = Math.min(projectorImages[projectorImageIndex].height, (int)Math.ceil (maxY))       - roi.y;
 
         maxroi.x       = Math.min(prevroi[projectorImageIndex].x, roi.x);
         maxroi.y       = Math.min(prevroi[projectorImageIndex].y, roi.y);
@@ -832,7 +842,16 @@ public class TrackingWorker extends SwingWorker {
                 frameGrabber.trigger();
 
                 // if we have monitor frames, display the images for feedback
+                boolean haveVisibleWindows = false;
                 if (monitorWindows != null) {
+                    for (CanvasFrame w : monitorWindows) {
+                        if (w.isVisible()) {
+                            haveVisibleWindows = true;
+                            break;
+                        }
+                    }
+                }
+                if (haveVisibleWindows) {
                     int p = aligner.getPyramidLevel();
                     IplImage roiMask  = aligner.getRoiMaskImage();
                     IplImage warped   = aligner.getWarpedImage();
