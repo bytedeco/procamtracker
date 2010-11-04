@@ -14,7 +14,7 @@
         <format property="TIMESTAMP" pattern="yyyyMMddhhmm" timezone=""/>
     </tstamp>
     <manifest file="manifest.mf">
-        <section name="name/audet/samuel/procamtracker/">
+        <section name="com/googlecode/javacv/procamtracker/">
             <attribute name="Implementation-Title" value="ProCamTracker"/>
             <attribute name="Implementation-Vendor" value="Samuel Audet"/>
             <attribute name="Implementation-Version" value="${TIMESTAMP}"/>

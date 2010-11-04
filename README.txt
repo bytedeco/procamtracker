@@ -1,11 +1,11 @@
 =ProCamTracker=
 
 ==Introduction==
-ProCamTracker is a user-friendly computer application to turn a perfectly normal pair of color camera and projector into a system that can track without markers a real world object (currently limited to matte planes), while simultaneously projecting on its surface geometrically corrected video images using the direct image alignment algorithm included in JavaCV ( http://code.google.com/p/javacv/ ), an open source library I developed as part of my doctoral research. More information about the algorithm itself can be found in the related CVPR 2010 paper below, which you may cite if you find this software useful. Thank you.
+ProCamTracker is a user-friendly computer application to turn a perfectly normal pair of color camera and projector into a system that can track without markers a real world object (currently limited to matte planes), while simultaneously projecting on its surface geometrically corrected video images using the direct image alignment algorithm included in [http://code.google.com/p/javacv/ JavaCV], an open source library I am developing as part of my doctoral research. More information about the algorithm itself can be found in the related CVPR 2010 paper below, which you may cite if you find this software useful. Thank you.
 
 Samuel Audet, Masatoshi Okutomi, and Masayuki Tanaka. Direct Image Alignment of Projector-Camera Systems with Planar Surfaces. The 23rd IEEE Conference on Computer Vision and Pattern Recognition (CVPR 2010). IEEE Computer Society, June 2010. http://www.ok.ctrl.titech.ac.jp/~saudet/publications/cvpr2010.pdf
 
-This method requires a geometrically and color calibrated projector-camera system. To perform the calibration, I recommend the tool I previously released for that purpose, ProCamCalib ( http://www.ok.ctrl.titech.ac.jp/~saudet/procamcalib/ ).
+This method requires a geometrically and color calibrated projector-camera system. To perform the calibration, I recommend the tool I previously released for that purpose, [http://www.ok.ctrl.titech.ac.jp/~saudet/procamcalib/ ProCamCalib].
 
 
 ==Required Software==
@@ -61,8 +61,8 @@ I make all the source code available at the URL below. It is divided into two pa
 
 In addition to the software above, to modify and build the source code you will need:
  * Whatever native tools needed to build the native `cvkernels` module of JavaCV
- * NetBeans 6.8  http://www.netbeans.org/downloads/
- * Java Native Access 3.2.5  http://jna.dev.java.net/
+ * NetBeans 6.9  http://www.netbeans.org/downloads/
+ * Java Native Access 3.2.7  http://jna.dev.java.net/
 
 (The icons were shamelessly copied from the source code repository of NetBeans. Also licensed under the GPLv2.)
 
@@ -74,6 +74,15 @@ I am currently an active member of the Okutomi & Tanaka Laboratory, Tokyo Instit
 
 
 ==Changes==
+===November 4, 2010===
+ * Renamed the package namespace to `com.googlecode.javacv.procamtracker`, which makes more sense now that JavaCV has been well anchored at Google Code for more than a year, piggybacking on the unique and easy-to-remember domain name, but this means you will need to manually edit any old XML `settings.pct` files and rename the namespace of the classes inside
+ * `CanvasFrame` now redraws its `Canvas` after the user resizes the `Frame`
+ * Added check to `DC1394FrameGrabber` so that a "Failed to initialize libdc1394" does not crash the JVM
+ * `FrameGrabber` now selects the default grabber a bit better
+ * Made sweeping changes (for the better, but still not finalized) to `GNImageAligner`, `ProjectiveTransformer`, `ProjectiveGainBiasTransformer`, and `ProCamTransformer`...
+ * Fixed display issues with the mouse cursor on Windows, and made a few small cosmetic changes
+ * Now tries harder to release native memory on time
+
 ===July 30, 2010===
  * Fixed crash that would occur in `CanvasFrame` for some video drivers
  * Fixed crash inside the code for direct alignment caused by the ROI getting set outside the image plane
