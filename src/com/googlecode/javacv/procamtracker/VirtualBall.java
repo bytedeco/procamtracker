@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009,2010 Samuel Audet
+ * Copyright (C) 2009,2010,2011 Samuel Audet
  *
  * This file is part of ProCamTracker.
  *
@@ -25,7 +25,7 @@ import com.googlecode.javacv.BaseSettings;
 import com.googlecode.javacv.CanvasFrame;
 import com.googlecode.javacv.JavaCV;
 
-import static com.googlecode.javacv.jna.cxcore.*;
+import static com.googlecode.javacv.cpp.opencv_core.*;
 
 /**
  *
@@ -53,7 +53,7 @@ public class VirtualBall {
         double friction   = 0.0;
         double stickiness = 5.0;
         double radius     = 20.0;
-        CvScalar.ByValue color = CvScalar.RED;
+        CvScalar color    = CvScalar.RED;
 
 //        public double[] getInitialRoiPts() {
 //            return initialRoiPts;
@@ -123,15 +123,15 @@ public class VirtualBall {
         }
 
         public Color getColor() {
-            return new Color((float)color.getRed()  /255,
-                             (float)color.getGreen()/255,
-                             (float)color.getBlue() /255);
+            return new Color((float)color.red()  /255,
+                             (float)color.green()/255,
+                             (float)color.blue() /255);
         }
         public void setColor(Color color) {
             float[] rgb = color.getRGBComponents(null);
-            this.color.setRed  (rgb[0]*255);
-            this.color.setGreen(rgb[1]*255);
-            this.color.setBlue (rgb[2]*255);
+            this.color.red  (rgb[0]*255);
+            this.color.green(rgb[1]*255);
+            this.color.blue (rgb[2]*255);
         }
     }
 
@@ -149,7 +149,7 @@ public class VirtualBall {
 
     private double[] roiPts, insidePosition, position, velocity;
     private double timeLeft;
-    private CvPoint.ByValue center = new CvPoint.ByValue();
+    private CvPoint center = new CvPoint();
 
     public static double[] intersectLines(double x1, double y1,
             double x2, double y2, double x3, double y3, double x4, double y4) {
@@ -360,8 +360,9 @@ public class VirtualBall {
             position[1] += velocity[1]*timeLeft;
         }
 
-        center.x = (int)Math.round((position[0] - (image.roi != null ? image.roi.xOffset : 0))*(1<<16));
-        center.y = (int)Math.round((position[1] - (image.roi != null ? image.roi.yOffset : 0))*(1<<16));
+        IplROI roi = image.roi();
+        center.x((int)Math.round((position[0] - (roi != null ? roi.xOffset() : 0))*(1<<16)));
+        center.y((int)Math.round((position[1] - (roi != null ? roi.yOffset() : 0))*(1<<16)));
 //System.out.println("drawn at " + position[0] + " " + position[1]);
         cvCircle(image, center, (int)Math.round(settings.radius*(1<<16)),
                 settings.color, CV_FILLED, CV_AA, 16);
@@ -374,7 +375,7 @@ public class VirtualBall {
         IplImage image = IplImage.create(640, 960, IPL_DEPTH_8U, 3);
         cvSetZero(image);
         double[] roiPts = { 0,0, 640,0, 640,480, 0,400 };
-        cvFillConvexPoly(image, CvPoint.createArray((byte)16, roiPts), roiPts.length/2, CvScalar.WHITE, CV_AA, 16);
+        cvFillConvexPoly(image, new CvPoint((byte)16, roiPts), roiPts.length/2, CvScalar.WHITE, CV_AA, 16);
         VirtualBall virtualBall = new VirtualBall(new Settings(roiPts));
 
         for (int i = 0; i < 1000; i++) {
@@ -390,7 +391,7 @@ public class VirtualBall {
 //if (i > 103) {
 //    System.out.println(i);
 //}
-            cvFillConvexPoly(image, CvPoint.createArray((byte)16, roiPts), roiPts.length/2, CvScalar.WHITE, CV_AA, 16);
+            cvFillConvexPoly(image, new CvPoint((byte)16, roiPts), roiPts.length/2, CvScalar.WHITE, CV_AA, 16);
             virtualBall.draw(image, roiPts);
             frame.showImage(image);
         }

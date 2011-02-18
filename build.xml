@@ -33,12 +33,9 @@
         <copy file="procamtracker-oceanlook.cmd" todir="${dist.dir}"/>
         <copy file="LICENSE.txt" todir="${dist.dir}"/>
         <copy file="README.txt" todir="${dist.dir}"/>
-        <copy file="../cvkernels/dist/Release-64/GNU-Linux-x86/libcvkernels.so" todir="${dist.dir}/lib/linux-amd64"/>
-        <copy file="../cvkernels/dist/Release-32/GNU-Linux-x86/libcvkernels.so" todir="${dist.dir}/lib/linux-i686"/>
-        <copy file="../cvkernels/dist/Release-MinGW-w64/cvkernels.dll"          todir="${dist.dir}/lib/windows-amd64"/>
-        <copy file="../cvkernels/dist/Release-MinGW/cvkernels.dll"              todir="${dist.dir}/lib/windows-i686"/>
-        <chmod perm="+x" file="${dist.dir}/lib/linux-amd64/libcvkernels.so"/>
-        <chmod perm="+x" file="${dist.dir}/lib/linux-i686/libcvkernels.so"/>
+        <copy todir="${dist.dir}/lib/">
+            <fileset dir="${project.javacv}/dist/" includes="javacv-*.jar"/>
+        </copy>
     </target>
 
     <!--

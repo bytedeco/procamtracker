@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009,2010 Samuel Audet
+ * Copyright (C) 2009,2010,2011 Samuel Audet
  *
  * This file is part of ProCamTracker.
  *
@@ -28,7 +28,7 @@ import java.awt.RenderingHints;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 
-import com.googlecode.javacv.jna.cxcore.IplImage;
+import com.googlecode.javacv.cpp.opencv_core.IplImage;
 
 /**
  *
@@ -97,10 +97,10 @@ public class Chronometer {
         chronoGraphics.setFont(smallFont);
         chronoGraphics.drawString(""+deciseconds, x, y);
         if (roi.x < 0) {
-            roi.x += image.width;
+            roi.x += image.width();
         }
         if (roi.y < 0) {
-            roi.y += image.height;
+            roi.y += image.height();
         }
         image.copyFrom(chronoImage, 1.0, roi);
     }

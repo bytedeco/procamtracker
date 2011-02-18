@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009,2010 Samuel Audet
+ * Copyright (C) 2009,2010,2011 Samuel Audet
  *
  * This file is part of ProCamTracker.
  *
@@ -19,9 +19,6 @@
 
 package com.googlecode.javacv.procamtracker;
 
-import com.sun.jna.NativeLibrary;
-import com.sun.jna.Platform;
-import com.sun.jna.Pointer;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Dialog.ModalityType;
@@ -82,6 +79,7 @@ import org.openide.nodes.Node;
 import org.openide.util.Lookup;
 import org.openide.windows.IOContainer;
 import org.openide.windows.InputOutput;
+import com.googlecode.javacpp.Pointer;
 import com.googlecode.javacv.CameraDevice;
 import com.googlecode.javacv.FrameGrabber;
 import com.googlecode.javacv.JavaCvErrorCallback;
@@ -90,7 +88,8 @@ import com.googlecode.javacv.MarkerDetector;
 import com.googlecode.javacv.ObjectFinder;
 import com.googlecode.javacv.ProjectorDevice;
 
-import static com.googlecode.javacv.jna.highgui.*;
+import static com.googlecode.javacv.cpp.opencv_core.*;
+import static com.googlecode.javacv.cpp.opencv_highgui.*;
 
 
 /**
@@ -141,7 +140,7 @@ public class MainFrame extends javax.swing.JFrame implements
         settingsFile = args.length > 0 ? new File(args[0]) : null;
         try {
             Logger.getLogger("").addHandler(globalLoggingHandler);
-            cvErrorCallback.redirectError();
+            cvRedirectError(cvErrorCallback, null, null);
 
             initComponents();
             loadSettings(settingsFile);
@@ -212,9 +211,9 @@ public class MainFrame extends javax.swing.JFrame implements
     };
 
     JavaCvErrorCallback cvErrorCallback = new JavaCvErrorCallback(true, this) {
-        @Override public int callback(int status, String func_name, String err_msg,
+        @Override public int call(int status, String func_name, String err_msg,
                 String file_name, int line, Pointer userdata) {
-            super.callback(status, func_name, err_msg, file_name, line, userdata);
+            super.call(status, func_name, err_msg, file_name, line, userdata);
             if (trackingWorker != null) {
                 trackingWorker.cancel();
             }
@@ -847,7 +846,7 @@ public class MainFrame extends javax.swing.JFrame implements
         textPane.setText(
                 "<font face=sans-serif><strong><font size=+2>ProCamTracker</font></strong><br>" +
                 "build timestamp " + timestamp + "<br>" +
-                "Copyright (C) 2009,2010 Samuel Audet &lt;<a href=\"mailto:saudet@ok.ctrl.titech.ac.jp%28Samuel%20Audet%29\">saudet@ok.ctrl.titech.ac.jp</a>&gt;<br>" +
+                "Copyright (C) 2009,2010,2011 Samuel Audet &lt;<a href=\"mailto:saudet@ok.ctrl.titech.ac.jp%28Samuel%20Audet%29\">saudet@ok.ctrl.titech.ac.jp</a>&gt;<br>" +
                 "Web site: <a href=\"http://www.ok.ctrl.titech.ac.jp/~saudet/procamtracker/\">http://www.ok.ctrl.titech.ac.jp/~saudet/procamtracker/</a><br>" +
                 "<br>" +
                 "Licensed under the GNU General Public License version 2 (GPLv2).<br>" +
@@ -927,26 +926,6 @@ public class MainFrame extends javax.swing.JFrame implements
                         myDirectory = myDirectory.getParentFile();
                     }
                     String path = myDirectory.getAbsolutePath();
-                    if (Platform.isLinux()) {
-                        if (Platform.is64Bit()) {
-                            NativeLibrary.addSearchPath("cvkernels",     path + "/lib/linux-amd64/");
-                            NativeLibrary.addSearchPath("ARToolKitPlus", path + "/lib/linux-amd64/");
-                        } else {
-                            NativeLibrary.addSearchPath("cvkernels",     path + "/lib/linux-i686/");
-                            NativeLibrary.addSearchPath("ARToolKitPlus", path + "/lib/linux-i686/");
-                        }
-                    } else if (Platform.isWindows()) {
-                        if (Platform.is64Bit()) {
-                            NativeLibrary.addSearchPath("cvkernels",     path + "/lib/windows-amd64/");
-                            NativeLibrary.addSearchPath("ARToolKitPlus", path + "/lib/windows-amd64/");
-                        } else {
-                            NativeLibrary.addSearchPath("cvkernels",     path + "/lib/windows-i686/");
-                            NativeLibrary.addSearchPath("ARToolKitPlus", path + "/lib/windows-i686/");
-                        }
-                    } else if (Platform.isMac()) {
-                        NativeLibrary.addSearchPath("cvkernels",     path + "/lib/macosx/");
-                        NativeLibrary.addSearchPath("ARToolKitPlus", path + "/lib/macosx/");
-                    }
 
                     String lafClassName = UIManager.getSystemLookAndFeelClassName();
                     ArrayList<String> otherArgs = new ArrayList<String>();
