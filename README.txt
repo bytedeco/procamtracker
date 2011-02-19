@@ -68,9 +68,10 @@ I am currently an active member of the Okutomi & Tanaka Laboratory, Tokyo Instit
 
 
 ==Changes==
-===February 18, 2011===
+===February 19, 2011===
  * Upgraded to the latest version of JavaCV based on JavaCPP instead of JNA, featuring better performance
  * Enhanced a few things of the image alignment algorithm
+ * Tried to fix image format conversion inside `FlyCaptureFrameGrabber`, but this is going to require more careful debugging
 
 ===November 4, 2010===
  * Renamed the package namespace to `com.googlecode.javacv.procamtracker`, which makes more sense now that JavaCV has been well anchored at Google Code for more than a year, piggybacking on the unique and easy-to-remember domain name, but this means you will need to manually edit any old XML `settings.pct` files and rename the namespace of the classes inside
