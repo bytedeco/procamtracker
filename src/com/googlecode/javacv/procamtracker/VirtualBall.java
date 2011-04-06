@@ -21,7 +21,7 @@ package com.googlecode.javacv.procamtracker;
 
 import java.awt.Color;
 import java.awt.Point;
-import com.googlecode.javacv.BaseSettings;
+import com.googlecode.javacv.BaseChildSettings;
 import com.googlecode.javacv.CanvasFrame;
 import com.googlecode.javacv.JavaCV;
 
@@ -39,7 +39,7 @@ public class VirtualBall {
         setSettings(settings);
     }
 
-    public static class Settings extends BaseSettings {
+    public static class Settings extends BaseChildSettings {
         public Settings() { }
         public Settings(double[] roiPts) {
             setInitialRoiPts(roiPts);

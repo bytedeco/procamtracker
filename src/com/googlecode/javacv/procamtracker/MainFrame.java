@@ -82,8 +82,9 @@ import org.openide.windows.InputOutput;
 import com.googlecode.javacpp.Pointer;
 import com.googlecode.javacv.CameraDevice;
 import com.googlecode.javacv.FrameGrabber;
-import com.googlecode.javacv.JavaCvErrorCallback;
 import com.googlecode.javacv.GNImageAligner;
+import com.googlecode.javacv.HandMouse;
+import com.googlecode.javacv.JavaCvErrorCallback;
 import com.googlecode.javacv.MarkerDetector;
 import com.googlecode.javacv.ObjectFinder;
 import com.googlecode.javacv.ProjectorDevice;
@@ -139,8 +140,61 @@ public class MainFrame extends javax.swing.JFrame implements
 
         settingsFile = args.length > 0 ? new File(args[0]) : null;
         try {
-            Logger.getLogger("").addHandler(globalLoggingHandler);
-            cvRedirectError(cvErrorCallback, null, null);
+            Logger.getLogger("").addHandler(new Handler() {
+                {
+                    setFormatter(new SimpleFormatter());
+                }
+                @Override public void publish(final LogRecord record) {
+                    final String title;
+                    final int messageType;
+                    if (record.getLevel().equals(Level.SEVERE)) {
+                        title = "SEVERE Logging Message";
+                        messageType = JOptionPane.ERROR_MESSAGE;
+                    } else if (record.getLevel().equals(Level.WARNING)) {
+                        title = "WARNING Logging Message";
+                        messageType = JOptionPane.WARNING_MESSAGE;
+                    } else if (record.getLevel().equals(Level.INFO)) {
+                        title = "INFO Logging Message";
+                        messageType = JOptionPane.INFORMATION_MESSAGE;
+                    } else {
+                        title = "Tracing Logging Message";
+                        messageType = JOptionPane.PLAIN_MESSAGE;
+                    }
+                    String[] messageLines = getFormatter().format(record).split("\r\n|\r|\n");
+                    StringBuilder messageBuilder = new StringBuilder();
+                    for (int i = 0; i < Math.min(5, messageLines.length); i++) {
+                        messageBuilder.append(messageLines[i] + '\n');
+                    }
+                    if (messageLines.length > 5) {
+                        messageBuilder.append("...");
+                    }
+                    final String message = messageBuilder.toString();
+
+                    EventQueue.invokeLater(new Runnable() {
+                        public void run() {
+                            if (messageType == JOptionPane.INFORMATION_MESSAGE) {
+                                messagesio.getOut().println(getFormatter().formatMessage(record));
+                            } else {
+                                JOptionPane.showMessageDialog(MainFrame.this,
+                                        message, title, messageType);
+                            }
+                        }
+                    });
+                }
+                @Override public void flush() { }
+                @Override public void close() throws SecurityException { }
+            });
+
+            cvRedirectError(new JavaCvErrorCallback(true, MainFrame.this) {
+                @Override public int call(int status, String func_name, String err_msg,
+                        String file_name, int line, Pointer userdata) {
+                    super.call(status, func_name, err_msg, file_name, line, userdata);
+                    if (trackingWorker != null) {
+                        trackingWorker.cancel();
+                    }
+                    return 0; // please don't terminate
+                }
+            }, null, null);
 
             initComponents();
             loadSettings(settingsFile);
@@ -148,7 +202,7 @@ public class MainFrame extends javax.swing.JFrame implements
             Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE,
                     "Could not load settings from \"" + settingsFile + "\"", ex);
             loadSettings(null);
-        } catch (UnsatisfiedLinkError e) {
+        } catch (LinkageError e) {
             throw new Exception(e);
         }
 
@@ -165,69 +219,15 @@ public class MainFrame extends javax.swing.JFrame implements
         beanTreeView.requestFocusInWindow();
     }
 
-    Handler globalLoggingHandler = new Handler() {
-        {
-            setFormatter(new SimpleFormatter());
-        }
-        @Override public void publish(final LogRecord record) {
-            final String title;
-            final int messageType;
-            if (record.getLevel().equals(Level.SEVERE)) {
-                title = "SEVERE Logging Message";
-                messageType = JOptionPane.ERROR_MESSAGE;
-            } else if (record.getLevel().equals(Level.WARNING)) {
-                title = "WARNING Logging Message";
-                messageType = JOptionPane.WARNING_MESSAGE;
-            } else if (record.getLevel().equals(Level.INFO)) {
-                title = "INFO Logging Message";
-                messageType = JOptionPane.INFORMATION_MESSAGE;
-            } else {
-                title = "Tracing Logging Message";
-                messageType = JOptionPane.PLAIN_MESSAGE;
-            }
-            String[] messageLines = getFormatter().format(record).split("\r\n|\r|\n");
-            StringBuilder messageBuilder = new StringBuilder();
-            for (int i = 0; i < Math.min(5, messageLines.length); i++) {
-                messageBuilder.append(messageLines[i] + '\n');
-            }
-            if (messageLines.length > 5) {
-                messageBuilder.append("...");
-            }
-            final String message = messageBuilder.toString();
-
-            EventQueue.invokeLater(new Runnable() {
-                public void run() {
-                    if (messageType == JOptionPane.INFORMATION_MESSAGE) {
-                        messagesio.getOut().println(getFormatter().formatMessage(record));
-                    } else {
-                        JOptionPane.showMessageDialog(MainFrame.this,
-                                message, title, messageType);
-                    }
-                }
-            });
-        }
-        @Override public void flush() { }
-        @Override public void close() throws SecurityException { }
-    };
-
-    JavaCvErrorCallback cvErrorCallback = new JavaCvErrorCallback(true, this) {
-        @Override public int call(int status, String func_name, String err_msg,
-                String file_name, int line, Pointer userdata) {
-            super.call(status, func_name, err_msg, file_name, line, userdata);
-            if (trackingWorker != null) {
-                trackingWorker.cancel();
-            }
-            return 0; // please don't terminate
-        }
-    };
-
-    CameraDevice   .Settings cameraSettings;
-    ProjectorDevice.Settings projectorSettings;
-    ObjectFinder   .Settings objectFinderSettings;
-    MarkerDetector .Settings markerDetectorSettings;
-    GNImageAligner .Settings alignerSettings;
-    TrackingWorker .Settings trackingSettings;
-    VirtualBall    .Settings virtualBallSettings;
+    CameraDevice    .Settings cameraSettings;
+    ProjectorDevice .Settings projectorSettings;
+    ObjectFinder    .Settings objectFinderSettings;
+    MarkerDetector  .Settings markerDetectorSettings;
+    GNImageAligner  .Settings alignerSettings;
+    HandMouse       .Settings handMouseSettings;
+    VirtualBall     .Settings virtualBallSettings;
+    RealityAugmentor.Settings realityAugmentorSettings;
+    TrackingWorker  .Settings trackingSettings;
     final File DEFAULT_SETTINGS_FILE = new File("settings.pct");
     File settingsFile = null;
 
@@ -320,11 +320,11 @@ public class MainFrame extends javax.swing.JFrame implements
         BeanNode alignerNode = new CleanBeanNode<GNImageAligner.Settings>
                 (alignerSettings, editors, "GNImageAligner");
 
-        if (trackingSettings == null) {
-            trackingSettings = new TrackingWorker.Settings();
+        if (handMouseSettings == null) {
+            handMouseSettings = new HandMouse.Settings();
         }
-        BeanNode trackingNode = new CleanBeanNode<TrackingWorker.Settings>
-                (trackingSettings, editors, "TrackingWorker");
+        BeanNode handMouseNode = new CleanBeanNode<HandMouse.Settings>
+                (handMouseSettings, editors, "HandMouse");
 
         if (virtualBallSettings == null) {
             virtualBallSettings = new VirtualBall.Settings();
@@ -332,9 +332,26 @@ public class MainFrame extends javax.swing.JFrame implements
         BeanNode virtualBallNode = new CleanBeanNode<VirtualBall.Settings>
                 (virtualBallSettings, editors, "VirtualBall");
 
+        if (realityAugmentorSettings == null) {
+            realityAugmentorSettings = new RealityAugmentor.Settings();
+            RealityAugmentor.ObjectSettings os = new RealityAugmentor.ObjectSettings();
+            RealityAugmentor.VirtualSettings vs = new RealityAugmentor.VirtualSettings();
+            os.add(vs);
+            realityAugmentorSettings.add(os);
+        }
+        BeanNode realityAugmentorNode = new CleanBeanNode<RealityAugmentor.Settings>
+                (realityAugmentorSettings, editors, "RealityAugmentor");
+
+        if (trackingSettings == null) {
+            trackingSettings = new TrackingWorker.Settings();
+        }
+        BeanNode trackingNode = new CleanBeanNode<TrackingWorker.Settings>
+                (trackingSettings, editors, "TrackingWorker");
+
         Children children = new Children.Array();
         children.add(new Node[] { cameraNode, projectorNode, objectFinderNode,
-                markerDetectorNode, alignerNode, trackingNode, virtualBallNode });
+                markerDetectorNode, alignerNode, handMouseNode, virtualBallNode,
+                realityAugmentorNode, trackingNode });
 
         Node root = new AbstractNode(children);
         root.setName("Settings");
@@ -348,8 +365,10 @@ public class MainFrame extends javax.swing.JFrame implements
             objectFinderSettings = null;
             markerDetectorSettings = null;
             alignerSettings = null;
-            trackingSettings = null;
+            handMouseSettings = null;
             virtualBallSettings = null;
+            realityAugmentorSettings = null;
+            trackingSettings = null;
 
             trackingWorker = null;
         } else {
@@ -359,8 +378,10 @@ public class MainFrame extends javax.swing.JFrame implements
             objectFinderSettings = (ObjectFinder.Settings)decoder.readObject();
             markerDetectorSettings = (MarkerDetector.Settings)decoder.readObject();
             alignerSettings = (GNImageAligner.Settings)decoder.readObject();
-            trackingSettings = (TrackingWorker.Settings)decoder.readObject();
+            handMouseSettings = (HandMouse.Settings)decoder.readObject();
             virtualBallSettings = (VirtualBall.Settings)decoder.readObject();
+            realityAugmentorSettings = (RealityAugmentor.Settings)decoder.readObject();
+            trackingSettings = (TrackingWorker.Settings)decoder.readObject();
             decoder.close();
         }
 
@@ -392,8 +413,10 @@ public class MainFrame extends javax.swing.JFrame implements
         encoder.writeObject(objectFinderSettings);
         encoder.writeObject(markerDetectorSettings);
         encoder.writeObject(alignerSettings);
-        encoder.writeObject(trackingSettings);
+        encoder.writeObject(handMouseSettings);
         encoder.writeObject(virtualBallSettings);
+        encoder.writeObject(realityAugmentorSettings);
+        encoder.writeObject(trackingSettings);
         encoder.close();
     }
 
@@ -765,8 +788,10 @@ public class MainFrame extends javax.swing.JFrame implements
             trackingWorker.objectFinderSettings = objectFinderSettings;
             trackingWorker.markerDetectorSettings = markerDetectorSettings;
             trackingWorker.alignerSettings = alignerSettings;
-            trackingWorker.trackingSettings = trackingSettings;
+            trackingWorker.handMouseSettings = handMouseSettings;
             trackingWorker.virtualBallSettings = virtualBallSettings;
+            trackingWorker.realityAugmentorSettings = realityAugmentorSettings;
+            trackingWorker.trackingSettings = trackingSettings;
             try {
                 trackingWorker.init();
                 trackingWorker.execute();

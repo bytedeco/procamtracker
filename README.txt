@@ -68,6 +68,13 @@ I am currently an active member of the Okutomi & Tanaka Laboratory, Tokyo Instit
 
 
 ==Changes==
+===April 7, 2011===
+ * Added a `format` property to camera settings, mostly useful for `FFmpegFrameGrabber`, where interesting values include "dv1394", "mjpeg", "video4linux2", "vfwcap", and "x11grab"
+ * Added hack to make sure the temporarily extracted library files get properly deleted under Windows
+ * Added (rudimentary) outlier detection and modified zero threshold handling 
+ * Added new `HandMouse` and `RealityAugmentor` features
+ * Fixed `ProjectiveDevice.distort()`, which mistakenly undistorted projector images instead
+
 ===February 19, 2011===
  * Upgraded to the latest version of JavaCV based on JavaCPP instead of JNA, featuring better performance
  * Enhanced a few things of the image alignment algorithm

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009,2010 Samuel Audet
+ * Copyright (C) 2009,2010,2011 Samuel Audet
  *
  * This file is part of ProCamTracker.
  *
@@ -81,7 +81,15 @@ public class CleanBeanNode<T> extends BeanNode<T> {
         return renameable;
     }
     @Override public Action[] getActions(boolean context) {
-        return null;
+        Object o = getBean();
+        if (o instanceof ActionableBean) {
+            return ((ActionableBean)o).actions();
+        } else {
+            return null;
+        }
     }
 
+    public interface ActionableBean {
+        Action[] actions();
+    }
 }
