@@ -115,7 +115,8 @@ public class TrackingWorker extends SwingWorker {
                      Settings trackingSettings;
 
     private String[] monitorWindowsTitles = {
-        "Initial Alignment", "Transformed Object", "Residual/HandMouse Image", "Camera Target" };
+        "Initial Alignment", "Transformed Object", "Camera Target",
+        "Residual Image", "Alternative Residual", "HandMouse Image" };
     private CanvasFrame[] monitorWindows = null;
 
     CameraDevice cameraDevice = null;
@@ -132,7 +133,7 @@ public class TrackingWorker extends SwingWorker {
     private RealityAugmentor realityAugmentor = null;
 
     private IplImage grabbedImage, undistortedCameraImage, distortedProjectorImage;
-    private IplImage[] projectorInitFloatImages, projectorInitImages,
+    private IplImage[] alternativeResidual, projectorInitFloatImages, projectorInitImages,
             cameraInitImages, cameraInitFloatImages, projectorImages, monitorImages;
     private CvRect[] prevroi = { cvRect(0, 0, 0, 0), cvRect(0, 0, 0, 0) };
     private int projectorImageIndex;
@@ -335,6 +336,7 @@ public class TrackingWorker extends SwingWorker {
         aligner = new GNImageAligner(transformer, parameters, reflectance, roiPts,
                 undistortedCameraImage, alignerSettings);
         handMouse = new HandMouse(aligner, handMouseSettings);
+        alternativeResidual = new IplImage[2];
 
         int timeMax = trackingSettings.getIteratingTimeMax();
         projectorImageIndex = 0;
@@ -404,9 +406,6 @@ public class TrackingWorker extends SwingWorker {
 //                        (dstRoiPts[0]+dstRoiPts[2]+dstRoiPts[4]+dstRoiPts[6])/4,
 //                        (dstRoiPts[1]+dstRoiPts[3]+dstRoiPts[5]+dstRoiPts[7])/4);
 //                cvFillConvexPoly(res, points, 3, cvScalarAll(0.1), 8, 16);
-            if (realityAugmentor.needsHandMouse()) {
-                handMouse.update();
-            }
 
             // trigger camera for a new frame
             frameGrabber.trigger();
@@ -421,6 +420,21 @@ public class TrackingWorker extends SwingWorker {
                     }
                 }
             }
+
+            if (realityAugmentor.needsHandMouse()) {
+                if (haveVisibleWindows) {
+                    int p = handMouseSettings.getPyramidLevel();
+                    if (aligner.getPyramidLevel() != p) {
+                        aligner.setPyramidLevel(p);
+                    }
+                    alternativeResidual[0] = IplImage.createIfNotCompatible(
+                            alternativeResidual[0], aligner.getRoiMaskImage());
+                    alternativeResidual[1] = IplImage.createIfNotCompatible(
+                            alternativeResidual[1], aligner.getRoiMaskImage());
+                }
+                handMouse.update(alternativeResidual);
+            }
+
             if (haveVisibleWindows) {
                 int p = aligner.getPyramidLevel();
                 IplImage roiMask     = aligner.getRoiMaskImage();
@@ -445,6 +459,18 @@ public class TrackingWorker extends SwingWorker {
                 }
                 monitorWindows[1].showImage(monitorImages[p], trackingSettings.getMonitorWindowsScale()*(1<<p));
 
+                cvSetZero(monitorImages[p]);
+                cvSetImageROI(monitorImages[p], cvGetImageROI(target));
+                cvConvertScale(target, monitorImages[p], 255, 0);
+                cvResetImageROI(monitorImages[p]);
+                infoLogString += realityAugmentor.drawRoi(monitorImages[p], p, undistortedCameraImage, transformer, parameters);
+                monitorWindows[2].showImage(monitorImages[p], trackingSettings.getMonitorWindowsScale()*(1<<p));
+                if (frameRecorder != null) {
+                    cvResize(monitorImages[p], undistortedCameraImage, CV_INTER_LINEAR);
+                    undistortedCameraImage.applyGamma(1/2.2);
+                    frameRecorder.record(undistortedCameraImage);
+                }
+
 //                double[] outlierThresholds = alignerSettings.getOutlierThresholds();
 //                double outlierThreshold2 = aligner.getRMSE()*outlierThresholds[Math.min(outlierThresholds.length-1, p)];
 //                outlierThreshold2 *= outlierThreshold2;
@@ -456,29 +482,26 @@ public class TrackingWorker extends SwingWorker {
                     byte m = mask.get();
 //                        double magnitude2 = 0;
                     for (int z = 0; z < channels; z++) {
-                        float f = in.get();
+                        float f = Math.abs(in.get());
 //                            magnitude2 += f*f;
-                        out.put((byte)(m == 0 ? 128 : Math.round(f*255 + 128)));
+                        out.put((byte)(m == 0 ? 0 : Math.round(f*255)));
                     }
 //                        byte value = (byte)(m == 0 || magnitude2 < outlierThreshold2 ? 0 : 255);
 //                        for (int z = 0; z < channels; z++) {
 //                            out.put(value);
 //                        }
                 }
-                IplImage mouseImage = handMouse.getImage();
-                monitorWindows[2].showImage(mouseImage != null ? handMouse.getImage() : 
-                        monitorImages[p], trackingSettings.getMonitorWindowsScale()*(1<<p));
-
-                cvSetZero(monitorImages[p]);
-                cvSetImageROI(monitorImages[p], cvGetImageROI(target));
-                cvConvertScale(target, monitorImages[p], 255, 0);
-                cvResetImageROI(monitorImages[p]);
-                infoLogString += realityAugmentor.drawRoi(monitorImages[p], p, undistortedCameraImage, transformer, parameters);
                 monitorWindows[3].showImage(monitorImages[p], trackingSettings.getMonitorWindowsScale()*(1<<p));
-                if (frameRecorder != null) {
-                    cvResize(monitorImages[p], undistortedCameraImage, CV_INTER_LINEAR);
-                    undistortedCameraImage.applyGamma(1/2.2);
-                    frameRecorder.record(undistortedCameraImage);
+
+                p = handMouseSettings.getPyramidLevel();
+                IplImage mouseImage = handMouse.getImage();
+                if (alternativeResidual[0] != null) {
+                    monitorWindows[4].showImage(alternativeResidual[0],
+                            trackingSettings.getMonitorWindowsScale()*(1<<p));
+                }
+                if (mouseImage != null) {
+                    monitorWindows[5].showImage(mouseImage,
+                            trackingSettings.getMonitorWindowsScale()*(1<<p));
                 }
             }
             logger.info(infoLogString);
