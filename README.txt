@@ -9,7 +9,7 @@ This method requires a geometrically and color calibrated projector-camera syste
 
 
 ==Required Software==
-I wrote ProCamTracker itself in Java and its binary should run on any platform where an implementation of Java SE 1.6 exists. The binary distribution also contains natively compiled code for Linux, Mac OS X, and Windows, needed by JavaCV. Still, additional software is required.
+I wrote ProCamTracker itself in Java and its binary should run on any platform where an implementation of Java SE 6 exists. The binary distribution also contains natively compiled code for Linux, Mac OS X, and Windows, needed by JavaCV. Still, additional software is required.
 
 Please install the following before running ProCamTracker:
  * An implementation of Java SE 6
@@ -17,31 +17,29 @@ Please install the following before running ProCamTracker:
   * Sun JDK 6  http://www.oracle.com/technetwork/java/javase/downloads/  or
   * IBM JDK 6  http://www.ibm.com/developerworks/java/jdk/  or
   * Java SE 6 for Mac OS X  http://developer.apple.com/java/  etc.
- * OpenCV 2.2  http://sourceforge.net/projects/opencvlibrary/files/
+ * OpenCV 2.2.0  http://sourceforge.net/projects/opencvlibrary/files/
 
-*IMPORTANT NOTE*: 
- * ProCamTracker runs _a lot_ faster under the "server" JVM than the "client" JVM, but because of its bigger size, not all distributions of Java come with the server one.
+And please make sure your Java and OpenCV have the same bitness: *32-bit and 64-bit modules do not mix under any circumstances*. Further, ProCamTracker runs _a lot_ faster under the "server" JVM than the "client" JVM, but because of its bigger size, not all distributions of Java come with the server one.
 
-Additionally, for IIDC/DCAM cameras only:
+Additionally, for IIDC/DCAM cameras, Microsoft's Kinect stereo camera, or other cameras supported via FFmpeg:
  * libdc1394 2.1.x (Linux and Mac OS X)  http://sourceforge.net/projects/libdc1394/files/
  * PGR FlyCapture 1.7~2.1 (Windows only)  http://www.ptgrey.com/products/pgrflycapture/
-
-Further, camera input via FFmpeg is also supported, but needs FFmpeg 0.6.x:
- * Source code  http://ffmpeg.org/download.html
- * Precompiled for Windows x86     http://hawkeye.arrozcru.org/builds/win32/shared/ (last build compatible with FFmpeg 0.6: 18-Apr-2011)
- * Precompiled for Windows x86-64  http://hawkeye.arrozcru.org/builds/win64/shared/ (last build compatible with FFmpeg 0.6: 18-Apr-2011)
+ * OpenKinect  http://openkinect.org/
+ * FFmpeg 0.6.x  http://ffmpeg.org/download.html
+  * Precompiled for Windows x86     http://hawkeye.arrozcru.org/builds/win32/shared/ (last build compatible with FFmpeg 0.6: 18-Apr-2011)
+  * Precompiled for Windows x86-64  http://hawkeye.arrozcru.org/builds/win64/shared/ (last build compatible with FFmpeg 0.6: 18-Apr-2011)
 
 
 ==Usage==
-Under Linux, Mac OS X, and other Unix variants, execute either `procamtracker-nativelook` or `procamtracker-oceanlook`, according to the theme you like best. ("Ocean" being Java's original look and feel.) The equivalent files under Windows are `procamcalib-nativelook.cmd` and `procamcalib-oceanlook.cmd`.
+Under Linux, Mac OS X, and other Unix variants, execute either `procamtracker-nativelook` or `procamtracker-oceanlook`, according to the theme that works best on your system. ("Ocean" being Java's original look and feel.) The equivalent files under Windows are `procamtracker-nativelook.cmd` and `procamtracker-oceanlook.cmd`.
 
 After launch, the user interface that appears allows the user to change settings for the camera, the projector, and the various modules of the tracking algorithm. I describe next a typical usage scenario and will not explain all the settings in details. The default values of the ones I do not mention should be good enough for most cases, but please feel free to experiment.
 
 1. Camera Settings
-Select a suitable `FrameGrabber` for your system, and fill in either `deviceFile`, `deviceNumber`, or `devicePath` as appropriate. Place the path to the `calibration.yaml` file created by ProCamCalib in the `parametersFile` field, while the `name` field must correspond to an entry in that file. Finally, the value of `nominalDistance` will be used as initial depth for the initialization algorithm of the image aligner.
+Select a suitable `FrameGrabber` for your system, and fill in either `deviceFile`, `deviceNumber` or `devicePath`, and `format` as appropriate. Place the path to the `calibration.yaml` file created by ProCamCalib in the `parametersFile` field, while the `name` field must correspond to an entry in that file.
 2. Projector Settings
 As with the camera settings, fill in the `parametersFile` field, but also confirm that the `screenNumber` corresponds to the one of the projector. 
-3. TrackingWorker
+3. RealityAugmentor/ObjectSettings/VirtualSettings
 Locate an image file (PNG, JPG, etc.) or video file (AVI, MP4, etc.) you would like to project on some planar surface and specify its path in the `projectorImageFile` or `projectorVideoFile` field respectively.
 
 Once you have modified all the desired settings, since the application may crash during the operations described below, please save them in an XML file via the Settings menu.
@@ -69,6 +67,10 @@ I am currently an active member of the Okutomi & Tanaka Laboratory, Tokyo Instit
 
 
 ==Changes==
+===June 10, 2011===
+ * New `OpenKinectFrameGrabber` to capture from Microsoft's Kinect stereo camera using OpenKinect
+ * The Unix scripts now check for a 64-bit JVM in priority
+
 ===May 11, 2011===
  * Changed `Marker.getCenter()` back to the centroid, because it has better noise averaging properties and gives in practice more accurate results than the actual center
  * Added hack to `OpenCVFrameGrabber.start()` to wait for `cvRetrieveFrame()` to return something else than `null` under Mac OS X
