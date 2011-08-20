@@ -9,15 +9,15 @@ This method requires a geometrically and color calibrated projector-camera syste
 
 
 ==Required Software==
-I wrote ProCamTracker itself in Java and its binary should run on any platform where an implementation of Java SE 6 exists. The binary distribution also contains natively compiled code for Linux, Mac OS X, and Windows, needed by JavaCV. Still, additional software is required.
+I wrote ProCamTracker itself in Java and its binary should run on any platform where an implementation of Java SE 6 or 7 exists. The binary distribution also contains natively compiled code for Linux, Mac OS X, and Windows, needed by JavaCV. Still, additional software is required.
 
 Please install the following before running ProCamTracker:
- * An implementation of Java SE 6
-  * OpenJDK 6  http://openjdk.java.net/install/  or
-  * Sun JDK 6  http://www.oracle.com/technetwork/java/javase/downloads/  or
-  * IBM JDK 6  http://www.ibm.com/developerworks/java/jdk/  or
-  * Java SE 6 for Mac OS X  http://developer.apple.com/java/  etc.
- * OpenCV 2.2.0  http://sourceforge.net/projects/opencvlibrary/files/
+ * An implementation of Java SE 6 or 7
+  * OpenJDK  http://openjdk.java.net/install/  or
+  * Sun JDK  http://www.oracle.com/technetwork/java/javase/downloads/  or
+  * IBM JDK  http://www.ibm.com/developerworks/java/jdk/  or
+  * Java SE for Mac OS X  http://developer.apple.com/java/  etc.
+ * OpenCV 2.3.1  http://sourceforge.net/projects/opencvlibrary/files/
 
 And please make sure your Java and OpenCV have the same bitness: *32-bit and 64-bit modules do not mix under any circumstances*. Further, ProCamTracker runs _a lot_ faster under the "server" JVM than the "client" JVM, but because of its bigger size, not all distributions of Java come with the server one.
 
@@ -25,9 +25,10 @@ Additionally, for IIDC/DCAM cameras, Microsoft's Kinect stereo camera, or other 
  * libdc1394 2.1.x (Linux and Mac OS X)  http://sourceforge.net/projects/libdc1394/files/
  * PGR FlyCapture 1.7~2.1 (Windows only)  http://www.ptgrey.com/products/pgrflycapture/
  * OpenKinect  http://openkinect.org/
- * FFmpeg 0.6.x  http://ffmpeg.org/download.html
-  * Precompiled for Windows x86     http://hawkeye.arrozcru.org/builds/win32/shared/ (last build compatible with FFmpeg 0.6: 18-Apr-2011)
-  * Precompiled for Windows x86-64  http://hawkeye.arrozcru.org/builds/win64/shared/ (last build compatible with FFmpeg 0.6: 18-Apr-2011)
+ * FFmpeg 0.6.x or 0.7.x  http://ffmpeg.org/download.html
+  * Precompiled for Windows (last compatible build: 18-Apr-2011)
+   * http://hawkeye.arrozcru.org/builds/win32/shared/
+   * http://hawkeye.arrozcru.org/builds/win64/shared/
 
 
 ==Usage==
@@ -67,6 +68,14 @@ I am currently an active member of the Okutomi & Tanaka Laboratory, Tokyo Instit
 
 
 ==Changes==
+===August 21, 2011===
+ * Upgraded support to OpenCV 2.3.1
+ * `OpenCVFrameGrabber` now detects when CV_CAP_PROP_POS_MSEC is broken and gives up calling `cvGetCaptureProperty()`
+
+===July 5, 2011===
+ * Upgraded support to OpenCV 2.3.0
+ * Fixed `OpenKinectFrameGrabber` and `FFmpegFrameGrabber`
+
 ===June 10, 2011===
  * New `OpenKinectFrameGrabber` to capture from Microsoft's Kinect stereo camera using OpenKinect
  * The Unix scripts now check for a 64-bit JVM in priority
