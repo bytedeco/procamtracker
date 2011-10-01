@@ -9,7 +9,7 @@ This method requires a geometrically and color calibrated projector-camera syste
 
 
 ==Required Software==
-I wrote ProCamTracker itself in Java and its binary should run on any platform where an implementation of Java SE 6 or 7 exists. The binary distribution also contains natively compiled code for Linux, Mac OS X, and Windows, needed by JavaCV. Still, additional software is required.
+I wrote ProCamTracker itself in Java and its binary should run on any platform where an implementation of Java SE 6 or 7 exists. The binary distribution also contains natively compiled code for Linux, Mac OS X, and Windows, needed by JavaCV. Still, additional software is required. (For answers to problems frequently encountered with OpenCV on the Windows platform, please refer to [http://code.google.com/p/javacv/wiki/Windows7AndOpenCV  Common issues with OpenCV under Windows 7].)
 
 Please install the following before running ProCamTracker:
  * An implementation of Java SE 6 or 7
@@ -68,6 +68,9 @@ I am currently an active member of the Okutomi & Tanaka Laboratory, Tokyo Instit
 
 
 ==Changes==
+===October 1, 2011===
+ * Fixed `DC1394FrameGrabber` and `FlyCaptureFrameGrabber` to behave as expected with all Bayer/Raw/Mono/RGB/YUV cameras modes (within the limits of libdc1394 and PGR FlyCapture)
+
 ===August 21, 2011===
  * Upgraded support to OpenCV 2.3.1
  * `OpenCVFrameGrabber` now detects when CV_CAP_PROP_POS_MSEC is broken and gives up calling `cvGetCaptureProperty()`
