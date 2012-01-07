@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Samuel Audet
+ * Copyright (C) 2011,2012 Samuel Audet
  *
  * This file is part of ProCamTracker.
  *
@@ -47,7 +47,7 @@ import com.googlecode.javacv.BaseSettings;
 import com.googlecode.javacv.BaseChildSettings;
 import com.googlecode.javacv.CanvasFrame;
 import com.googlecode.javacv.FrameGrabber;
-import com.googlecode.javacv.FrameGrabber.ColorMode;
+import com.googlecode.javacv.FrameGrabber.ImageMode;
 import com.googlecode.javacv.FFmpegFrameGrabber;
 import com.googlecode.javacv.HandMouse;
 import com.googlecode.javacv.JavaCV;
@@ -377,7 +377,7 @@ public class RealityAugmentor {
                 videoToProject = new OpenCVFrameGrabber(virtualSettings.projectorVideoFile);
             }
             if (videoToProject != null) {
-                videoToProject.setColorMode(ColorMode.BGR);
+                videoToProject.setImageMode(ImageMode.COLOR);
                 if (imageToProject != null) {
                     videoToProject.setImageWidth (imageToProject.width());
                     videoToProject.setImageHeight(imageToProject.height());
@@ -396,7 +396,7 @@ public class RealityAugmentor {
     }
 
     public double[] acquireRoi(CanvasFrame monitorWindow, double monitorWindowScale,
-            IplImage cameraImage) throws Exception {
+            IplImage cameraImage, int pyramidLevel) throws Exception {
         roiPts = null;
         markerError      = 0;
         markerErrorCount = 0;
@@ -417,6 +417,11 @@ public class RealityAugmentor {
             }
 
             if (roiPts != null) {
+                if (pyramidLevel > 0) {
+                    for (int i = 0; i < roiPts.length; i++) {
+                        roiPts[i] = roiPts[i]*(1<<pyramidLevel);
+                    }
+                }
                 objectSettings = os;
                 virtualSettings = null;
                 for (VirtualSettings vs : objectSettings.toArray()) {
@@ -832,14 +837,14 @@ public class RealityAugmentor {
                 for (Marker m : markers) {
                     if (m != null && m.id == j) {
                         double[] center = m.getCenter();
-                        double dx = center[0] - dstPts.get(j*2);
-                        double dy = center[1] - dstPts.get(j*2+1);
+                        double dx = center[0]*(1<<camera.getMapsPyramidLevel()) - dstPts.get(j*2);
+                        double dy = center[1]*(1<<camera.getMapsPyramidLevel()) - dstPts.get(j*2+1);
                         double error = dx*dx + dy*dy;
                         infoLogString += (float)Math.sqrt(error) + (j < 3 ? ", " : "");
                         markerError += error;
                         markerErrorCount++;
 
-                        corners.fill((byte)(16-pyramidLevel), m.corners);
+                        corners.put((byte)(16-pyramidLevel+camera.getMapsPyramidLevel()), m.corners);
                         cvLine(monitorImage, corners.position(0), corners2.position(2),
                                 CV_RGB(monitorImage.highValue(), 0, 0), 1, CV_AA, 16);
                         cvLine(monitorImage, corners.position(1), corners2.position(3),
@@ -858,7 +863,7 @@ public class RealityAugmentor {
         } else {
             dstPts.put(roiPts);
             transformer.transform(dstPts, dstPts, parameters, false);
-            temppts.fill((byte)(16-pyramidLevel), dstPts.get());
+            temppts.put((byte)(16-pyramidLevel), dstPts.get());
             cvPolyLine(monitorImage, temppts.position(0), new int[] { 4 }, 1, 1,
                     CV_RGB(0, monitorImage.highValue(), 0), 1, CV_AA, 16);
         }

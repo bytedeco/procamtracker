@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009,2010,2011 Samuel Audet
+ * Copyright (C) 2009,2010,2011,2012 Samuel Audet
  *
  * This file is part of ProCamTracker.
  *
@@ -49,6 +49,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
+import javax.media.opengl.GLProfile;
 import javax.swing.Action;
 import javax.swing.ActionMap;
 import javax.swing.InputMap;
@@ -871,7 +872,7 @@ public class MainFrame extends javax.swing.JFrame implements
         textPane.setText(
                 "<font face=sans-serif><strong><font size=+2>ProCamTracker</font></strong><br>" +
                 "build timestamp " + timestamp + "<br>" +
-                "Copyright (C) 2009,2010,2011 Samuel Audet &lt;<a href=\"mailto:saudet@ok.ctrl.titech.ac.jp%28Samuel%20Audet%29\">saudet@ok.ctrl.titech.ac.jp</a>&gt;<br>" +
+                "Copyright (C) 2009-2012 Samuel Audet &lt;<a href=\"mailto:saudet@ok.ctrl.titech.ac.jp%28Samuel%20Audet%29\">saudet@ok.ctrl.titech.ac.jp</a>&gt;<br>" +
                 "Web site: <a href=\"http://www.ok.ctrl.titech.ac.jp/~saudet/procamtracker/\">http://www.ok.ctrl.titech.ac.jp/~saudet/procamtracker/</a><br>" +
                 "<br>" +
                 "Licensed under the GNU General Public License version 2 (GPLv2).<br>" +
@@ -938,6 +939,10 @@ public class MainFrame extends javax.swing.JFrame implements
     * @param args the command line arguments
     */
     public static void main(final String args[]) {
+        try {
+            GLProfile.initSingleton();
+        } catch (Throwable t) { }
+
         // try to init all frame grabbers here, because bad things
         // happen if loading errors occur while we're in the GUI thread...
         FrameGrabber.init();

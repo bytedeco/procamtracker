@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009,2010,2011 Samuel Audet
+ * Copyright (C) 2009,2010,2011,2012 Samuel Audet
  *
  * This file is part of ProCamTracker.
  *
@@ -25,25 +25,32 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.media.opengl.GLProfile;
 import javax.swing.SwingWorker;
 import com.googlecode.javacv.BaseChildSettings;
 import com.googlecode.javacv.CameraDevice;
 import com.googlecode.javacv.CanvasFrame;
 import com.googlecode.javacv.FFmpegFrameRecorder;
 import com.googlecode.javacv.FrameGrabber;
-import com.googlecode.javacv.FrameGrabber.ColorMode;
+import com.googlecode.javacv.FrameGrabber.ImageMode;
 import com.googlecode.javacv.FrameRecorder;
 import com.googlecode.javacv.GNImageAligner;
+import com.googlecode.javacv.GNImageAlignerCL;
 import com.googlecode.javacv.HandMouse;
+import com.googlecode.javacv.JavaCVCL;
 import com.googlecode.javacv.MarkerDetector;
 import com.googlecode.javacv.ObjectFinder;
 import com.googlecode.javacv.Parallel;
 import com.googlecode.javacv.ProCamTransformer;
+import com.googlecode.javacv.ProCamTransformerCL;
 import com.googlecode.javacv.ProjectorDevice;
 import com.googlecode.javacv.ReflectanceInitializer;
+import com.jogamp.opencl.CLImage2d;
+import com.jogamp.opencl.CLImageFormat.ChannelType;
 
 import static com.googlecode.javacv.cpp.opencv_core.*;
 import static com.googlecode.javacv.cpp.opencv_imgproc.*;
+import static com.googlecode.javacv.cpp.avutil.*;
 
 /**
  *
@@ -58,6 +65,7 @@ public class TrackingWorker extends SwingWorker {
         double lostObjectThreshold = 0.1;
         double monitorWindowsScale = 0.5;
         File outputVideoFile = null;
+        boolean useOpenCL = false;
 
 
         public int getAuditPyramidLevel() {
@@ -102,6 +110,12 @@ public class TrackingWorker extends SwingWorker {
                     outputVideoFilename.length() == 0 ? null : new File(outputVideoFilename);
         }
 
+        public boolean isUseOpenCL() {
+            return useOpenCL;
+        }
+        public void setUseOpenCL(boolean useOpenCL) {
+            this.useOpenCL = useOpenCL;
+        }
     }
 
     CameraDevice    .Settings cameraSettings;
@@ -119,6 +133,8 @@ public class TrackingWorker extends SwingWorker {
         "Residual Image", "Alternative Residual", "HandMouse Image" };
     private CanvasFrame[] monitorWindows = null;
 
+    JavaCVCL contextCL;
+
     CameraDevice cameraDevice = null;
     FrameGrabber frameGrabber = null;
     ProjectorDevice projectorDevice = null;
@@ -132,9 +148,12 @@ public class TrackingWorker extends SwingWorker {
     private HandMouse handMouse = null;
     private RealityAugmentor realityAugmentor = null;
 
-    private IplImage grabbedImage, undistortedCameraImage, distortedProjectorImage;
     private IplImage[] alternativeResidual, projectorInitFloatImages, projectorInitImages,
             cameraInitImages, cameraInitFloatImages, projectorImages, monitorImages;
+    private IplImage grabbedImage, undistortedCameraImage, distortedProjectorImage,
+            mask, transformed, residual, target;
+    private CLImage2d grabbedImageCL, undistortedCameraImageCL, distortedProjectorImageCL, 
+            mapxCL, mapyCL, projectorImageCL;
     private CvRect[] prevroi = { cvRect(0, 0, 0, 0), cvRect(0, 0, 0, 0) };
     private int projectorImageIndex;
     private FrameRecorder frameRecorder = null;
@@ -157,6 +176,14 @@ public class TrackingWorker extends SwingWorker {
 
         if (projectorDevice == null) {
             projectorDevice = new ProjectorDevice(projectorSettings);
+            if (trackingSettings.useOpenCL) {
+                // OpenCL uses RGBA, not BGR, so we need to invert the colorMixingMatrix
+                CvMat X = projectorDevice.colorMixingMatrix;
+                double[] x = X.get();
+                X.put(x[8], x[7], x[6],
+                      x[5], x[4], x[3],
+                      x[2], x[1], x[0]);
+            }
         } else {
             projectorDevice.setSettings(projectorSettings);
         }
@@ -177,21 +204,34 @@ public class TrackingWorker extends SwingWorker {
             RealityAugmentor.VirtualSettings virtualSettings = realityAugmentor.getVirtualSettings();
             if (virtualSettings != null && virtualSettings.projectionType !=
                     RealityAugmentor.VirtualSettings.ProjectionType.FIXED) {
-                transformer.setProjectorImage(projectorImages[(projectorImageIndex+1)%2],
-                        alignerSettings.getPyramidLevels());
+                if (trackingSettings.useOpenCL) {
+                    contextCL.writeImage(projectorImageCL, projectorImages[(projectorImageIndex+1)%2], false);
+                    ((ProCamTransformerCL)transformer).setProjectorImageCL(projectorImageCL,
+                            0, alignerSettings.getMaxPyramidLevel());
+                } else {
+                    transformer.setProjectorImage(projectorImages[(projectorImageIndex+1)%2],
+                            0, alignerSettings.getMaxPyramidLevel());
+                }
             }
 
             grabbedImage = frameGrabber.grab();
-            // gamma "uncorrection", linearization
-            double gamma = frameGrabber.getGamma();
-            if (gamma != 1.0) {
-                grabbedImage.applyGamma(gamma);
-            }
-
             if (grabbedImage != null) {
-                cameraDevice.undistort(grabbedImage, undistortedCameraImage);
-                if (aligner != null) {
-                    aligner.setTargetImage(undistortedCameraImage);
+                // gamma "uncorrection", linearization
+                double gamma = frameGrabber.getGamma();
+                if (gamma != 1.0) {
+                    grabbedImage.applyGamma(gamma);
+                }
+                if (trackingSettings.useOpenCL) {
+                    contextCL.writeImage(grabbedImageCL, grabbedImage, false);
+                    contextCL.remap(grabbedImageCL, undistortedCameraImageCL, mapxCL, mapyCL, frameGrabber.getSensorPattern());
+                    if (aligner != null) {
+                        ((GNImageAlignerCL)aligner).setTargetImageCL(undistortedCameraImageCL);
+                    }
+                } else {
+                    cameraDevice.undistort(grabbedImage, undistortedCameraImage);
+                    if (aligner != null) {
+                        aligner.setTargetImage(undistortedCameraImage);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -219,6 +259,31 @@ public class TrackingWorker extends SwingWorker {
         }
     }};
 
+    private IplImage getMonitorImage(IplImage floatImage, IplImage maskImage, int pyramidLevel) {
+        final int inChannels = floatImage.nChannels();
+        final int outChannels = 3;
+        final int[] order = inChannels == 3 ? new int[] { 0, 1, 2 } : new int[] { 2, 1, 0 };
+
+        if (monitorImages[pyramidLevel] == null) {
+            monitorImages[pyramidLevel] = IplImage.create(floatImage.width(), floatImage.height(), IPL_DEPTH_8U, outChannels);
+        }
+
+        FloatBuffer in  = floatImage.getFloatBuffer();
+        ByteBuffer mask = maskImage == null ? null : maskImage.getByteBuffer();
+        ByteBuffer out  = monitorImages[pyramidLevel].getByteBuffer();
+        float[] buffer = new float[4];
+        while (in.hasRemaining() && out.hasRemaining() && (mask == null || mask.hasRemaining())) {
+            byte m = mask == null ? (byte)0xFF : mask.get();
+            for (int z = 0; z < inChannels; z++) {
+                buffer[z] = Math.abs(in.get());
+            }
+            for (int z = 0; z < outChannels; z++) {
+                out.put((byte)(m == 0 ? 0 : Math.round(buffer[order[z]]*255)));
+            }
+        }
+        return monitorImages[pyramidLevel];
+    }
+
     private boolean doTracking() throws Exception {
         setProgress(INITIALIZING);
 
@@ -233,15 +298,39 @@ public class TrackingWorker extends SwingWorker {
             cvResetImageROI(cameraInitImages[i]);
             cvCopy(frameGrabber.grab(), cameraInitImages[i]);
         }
-        cvResetImageROI(undistortedCameraImage);
+
+        // gamma "uncorrection", linearization
         for (int i = 0; i < cameraInitImages.length; i++) {
-            // for gamma "uncorrection", linearization
             double gamma = frameGrabber.getGamma();
             if (gamma != 1.0) {
                 cameraInitImages[i].applyGamma(gamma);
             }
+        }
+
+        // acquire the ROI
+        cameraDevice.setMapsPyramidLevel(0);
+        IplImage cameraTempInit = cameraDevice.undistort(cameraInitImages[1]);
+        if (monitorWindows != null) {
+            monitorWindows[0].showImage(cameraTempInit, trackingSettings.getMonitorWindowsScale());
+        }
+        roiPts = realityAugmentor.acquireRoi(monitorWindows == null ? null : monitorWindows[0],
+                trackingSettings.getMonitorWindowsScale(), cameraTempInit, 0);
+        if (roiPts == null) {
+            //throw new Exception("Error: Could not acquire the ROI.");
+            return false;
+        }
+
+        // distortion removal and floating-point conversion for initialization
+        cameraDevice.setMapsPyramidLevel(alignerSettings.getMinPyramidLevel());
+        if (trackingSettings.useOpenCL) {
+            mapxCL = contextCL.createCLImage(cameraDevice.getUndistortMap1());
+            mapyCL = contextCL.createCLImage(cameraDevice.getUndistortMap2());
+            contextCL.writeImage(mapxCL, cameraDevice.getUndistortMap1(), false);
+            contextCL.writeImage(mapyCL, cameraDevice.getUndistortMap2(), false);
+        }
+        cvResetImageROI(undistortedCameraImage);
+        for (int i = 0; i < cameraInitImages.length; i++) {
             cameraDevice.undistort(cameraInitImages[i], undistortedCameraImage);
-            cvCopy(undistortedCameraImage, cameraInitImages[i]);
             cvResetImageROI(cameraInitFloatImages[i]);
             cvConvertScale(undistortedCameraImage, cameraInitFloatImages[i],
                     1.0/undistortedCameraImage.highValue(), 0);
@@ -252,21 +341,15 @@ public class TrackingWorker extends SwingWorker {
             }
         }
 
-        if (monitorWindows != null) {
-            monitorWindows[0].showImage(cameraInitImages[1], trackingSettings.getMonitorWindowsScale());
-        }
-
-        roiPts = realityAugmentor.acquireRoi(monitorWindows == null ? null : monitorWindows[0],
-                trackingSettings.getMonitorWindowsScale(), cameraInitImages[1]);
-        if (roiPts == null) {
-            //throw new Exception("Error: Could not acquire the ROI.");
-            return false;
-        }
-
         // extract the surface reflectance image along with its geometric plane parameters
-        double[] ambientLight = new double[cameraInitFloatImages[0].nChannels()];
+        double[] ambientLight = new double[cameraInitFloatImages[0].nChannels() > 1 ? 3 : 1];
         IplImage reflectance = reflectanceInitializer.initializeReflectance(cameraInitFloatImages,
                 roiPts, ambientLight);
+        CLImage2d reflectanceCL = null;
+        if (trackingSettings.useOpenCL) {
+            reflectanceCL = contextCL.createCLImage(reflectance);
+            contextCL.writeImage(reflectanceCL, reflectance, false);
+        }
         String infoLogString = "initial a = (";
         for (int i = 0; i < ambientLight.length; i++) {
             infoLogString += (float)ambientLight[i];
@@ -290,7 +373,11 @@ public class TrackingWorker extends SwingWorker {
         }
 
         // create our image transformer and its initial parameters
-        transformer = new ProCamTransformer(roiPts, cameraDevice, projectorDevice, n);
+        if (trackingSettings.useOpenCL) {
+            transformer = new ProCamTransformerCL(contextCL, roiPts, cameraDevice, projectorDevice, n);
+        } else {
+            transformer = new ProCamTransformer(roiPts, cameraDevice, projectorDevice, n);
+        }
         parameters = transformer.createParameters();
         parameters.set(parameters.size()-ambientLight.length-1, 1.0);
         for (int i = 0; i < ambientLight.length; i++) {
@@ -306,16 +393,22 @@ public class TrackingWorker extends SwingWorker {
         cvSet(projectorImages[1], CvScalar.WHITE);
         realityAugmentor.update(projectorImages[0], null, null, parameters);
         cvCopy(projectorImages[0], projectorImages[1]);
-        transformer.setProjectorImage(projectorImages[0], alignerSettings.getPyramidLevels());
+        if (trackingSettings.useOpenCL) {
+            contextCL.writeImage(projectorImageCL, projectorImages[0], false);
+            ((ProCamTransformerCL)transformer).setProjectorImageCL(projectorImageCL, 0, alignerSettings.getMaxPyramidLevel());
+        } //else {
+            transformer.setProjectorImage(projectorImages[0], 0, alignerSettings.getMaxPyramidLevel());
+        //}
 
         // show our target alignment in the first monitor frame
         if (monitorWindows != null) {
-            IplImage floatImage = IplImage.createCompatible(reflectance);
-            transformer.transform(reflectance, floatImage, null, 0, parameters, false);
-            cvConvertScale(floatImage, undistortedCameraImage, 255, 0);
-            monitorWindows[0].showImage(undistortedCameraImage, trackingSettings.getMonitorWindowsScale());
+            monitorImages = new IplImage[alignerSettings.getMaxPyramidLevel()+1];
 
-            monitorImages = new IplImage[alignerSettings.getPyramidLevels()];
+            IplImage floatImage = IplImage.createCompatible(reflectance);
+            transformer.transform(reflectance, floatImage, null, alignerSettings.getMinPyramidLevel(), parameters, false);
+//            cvConvertScale(floatImage, undistortedCameraImage, 255, 0);
+            IplImage monitorImage = getMonitorImage(floatImage, null, alignerSettings.getMinPyramidLevel());
+            monitorWindows[0].showImage(monitorImage, trackingSettings.getMonitorWindowsScale());
         }
 
 
@@ -333,15 +426,20 @@ public class TrackingWorker extends SwingWorker {
 //        }
         frameGrabber.trigger();
         projectorImageIndex = 1; doCamera.run();
-        aligner = new GNImageAligner(transformer, parameters, reflectance, roiPts,
-                undistortedCameraImage, alignerSettings);
+        if (trackingSettings.useOpenCL) {
+            aligner = new GNImageAlignerCL((ProCamTransformerCL)transformer, parameters,
+                    reflectanceCL, roiPts, undistortedCameraImageCL, alignerSettings);
+        } else {
+            aligner = new GNImageAligner(transformer, parameters,
+                    reflectance, roiPts, undistortedCameraImage, alignerSettings);
+        }
         handMouse = new HandMouse(aligner, handMouseSettings);
         alternativeResidual = new IplImage[2];
 
         int timeMax = trackingSettings.getIteratingTimeMax();
         projectorImageIndex = 0;
         double[] delta = new double[parameters.size()+1];
-        int ps = alignerSettings.getPyramidLevels();
+        int ps = alignerSettings.getMaxPyramidLevel()+1;
 //            int ls = alignerSettings.getLineSearch().length;
 //            long[][] iterationTime = new long[ps][ls];
 //            int[][] iterationCount = new int[ps][ls];
@@ -428,70 +526,53 @@ public class TrackingWorker extends SwingWorker {
                         aligner.setPyramidLevel(p);
                     }
                     alternativeResidual[0] = IplImage.createIfNotCompatible(
-                            alternativeResidual[0], aligner.getRoiMaskImage());
+                            alternativeResidual[0], aligner.getMaskImage());
                     alternativeResidual[1] = IplImage.createIfNotCompatible(
-                            alternativeResidual[1], aligner.getRoiMaskImage());
+                            alternativeResidual[1], aligner.getMaskImage());
                 }
                 handMouse.update(alternativeResidual);
             }
 
             if (haveVisibleWindows) {
                 int p = aligner.getPyramidLevel();
-                IplImage roiMask     = aligner.getRoiMaskImage();
-                IplImage transformed = aligner.getTransformedImage();
-                IplImage residual    = aligner.getResidualImage();
-                IplImage target      = aligner.getTargetImage();
-                int channels = transformed.nChannels();
-
-                if (monitorImages[p] == null) {
-                    monitorImages[p] = IplImage.create(roiMask.width(), roiMask.height(), IPL_DEPTH_8U, channels);
+                if (trackingSettings.useOpenCL) {
+                    CLImage2d maskCL        = ((GNImageAlignerCL)aligner).getMaskImageCL();
+                    CLImage2d transformedCL = ((GNImageAlignerCL)aligner).getTransformedImageCL();
+                    CLImage2d residualCL    = ((GNImageAlignerCL)aligner).getResidualImageCL();
+                    CLImage2d targetCL      = ((GNImageAlignerCL)aligner).getTargetImageCL();
+                    contextCL.acquireGLObject(maskCL);
+                    mask        = contextCL.readImage(maskCL,        mask,        false);
+                    contextCL.releaseGLObject(maskCL);
+                    transformed = contextCL.readImage(transformedCL, transformed, false);
+                    residual    = contextCL.readImage(residualCL,    residual,    false);
+                    target      = contextCL.readImage(targetCL,      target,      true );
+                } else {
+                    mask        = aligner.getMaskImage();
+                    transformed = aligner.getTransformedImage();
+                    residual    = aligner.getResidualImage();
+                    target      = aligner.getTargetImage();
                 }
+                IplImage monitorImage = getMonitorImage(transformed, mask, p);
+                monitorWindows[1].showImage(monitorImage, trackingSettings.getMonitorWindowsScale()*(1<<p));
 
-                FloatBuffer in  = transformed.getFloatBuffer();
-                ByteBuffer mask = roiMask.getByteBuffer();
-                ByteBuffer out  = monitorImages[p].getByteBuffer();
-                while (in.hasRemaining() && out.hasRemaining() && mask.hasRemaining()) {
-                    byte m = mask.get();
-                    for (int z = 0; z < channels; z++) {
-                        float f = in.get();
-                        out.put((byte)(m == 0 ? 0 : Math.round(f*255)));
-                    }
-                }
-                monitorWindows[1].showImage(monitorImages[p], trackingSettings.getMonitorWindowsScale()*(1<<p));
-
-                cvSetZero(monitorImages[p]);
-                cvSetImageROI(monitorImages[p], cvGetImageROI(target));
-                cvConvertScale(target, monitorImages[p], 255, 0);
-                cvResetImageROI(monitorImages[p]);
-                infoLogString += realityAugmentor.drawRoi(monitorImages[p], p, undistortedCameraImage, transformer, parameters);
-                monitorWindows[2].showImage(monitorImages[p], trackingSettings.getMonitorWindowsScale()*(1<<p));
+                monitorImage = getMonitorImage(target, null, p);
+//                cvSetZero(monitorImages[p]);
+//                cvSetImageROI(monitorImages[p], cvGetImageROI(target));
+//                cvConvertScale(target, monitorImages[p], 255, 0);
+//                cvResetImageROI(monitorImages[p]);
+                cameraDevice.setMapsPyramidLevel(0);
+                IplImage cameraTempImage = cameraDevice.undistort(grabbedImage);
+                infoLogString += realityAugmentor.drawRoi(monitorImage, p, cameraTempImage, transformer, parameters);
+                cameraDevice.setMapsPyramidLevel(alignerSettings.getMinPyramidLevel());
+                monitorWindows[2].showImage(monitorImage, trackingSettings.getMonitorWindowsScale()*(1<<p));
                 if (frameRecorder != null) {
-                    cvResize(monitorImages[p], undistortedCameraImage, CV_INTER_LINEAR);
+                    cvResize(monitorImage, undistortedCameraImage, CV_INTER_LINEAR);
                     undistortedCameraImage.applyGamma(1/2.2);
                     frameRecorder.record(undistortedCameraImage);
                 }
 
-//                double[] outlierThresholds = alignerSettings.getOutlierThresholds();
-//                double outlierThreshold2 = aligner.getRMSE()*outlierThresholds[Math.min(outlierThresholds.length-1, p)];
-//                outlierThreshold2 *= outlierThreshold2;
-
-                in = residual.getFloatBuffer();
-                mask.position(0);
-                out.position(0);
-                while (in.hasRemaining() && out.hasRemaining() && mask.hasRemaining()) {
-                    byte m = mask.get();
-//                        double magnitude2 = 0;
-                    for (int z = 0; z < channels; z++) {
-                        float f = Math.abs(in.get());
-//                            magnitude2 += f*f;
-                        out.put((byte)(m == 0 ? 0 : Math.round(f*255)));
-                    }
-//                        byte value = (byte)(m == 0 || magnitude2 < outlierThreshold2 ? 0 : 255);
-//                        for (int z = 0; z < channels; z++) {
-//                            out.put(value);
-//                        }
-                }
-                monitorWindows[3].showImage(monitorImages[p], trackingSettings.getMonitorWindowsScale()*(1<<p));
+                monitorImage = getMonitorImage(residual, mask, p);
+                monitorWindows[3].showImage(monitorImage, trackingSettings.getMonitorWindowsScale()*(1<<p));
 
                 p = handMouseSettings.getPyramidLevel();
                 IplImage mouseImage = handMouse.getImage();
@@ -603,16 +684,28 @@ public class TrackingWorker extends SwingWorker {
         try {
             setProgress(INITIALIZING);
 
+            if (trackingSettings.useOpenCL) {
+                contextCL = new JavaCVCL(GLProfile.getDefault());
+            }
+
             // perform initialization of camera device
             frameGrabber = cameraDevice.createFrameGrabber();
             frameGrabber.setTriggerMode(true);
-            frameGrabber.setColorMode(ColorMode.BGR);
+            frameGrabber.setImageMode(ImageMode.COLOR);
+            if (trackingSettings.useOpenCL) {
+                frameGrabber.setPixelFormat(PIX_FMT_RGBA);
+            }
             frameGrabber.start();
             frameGrabber.trigger();
-            final IplImage initImage = frameGrabber.grab();
+            IplImage image = frameGrabber.grab();
+            if (trackingSettings.useOpenCL && frameGrabber.getSensorPattern() != -1L) {
+                frameGrabber.setImageMode(ImageMode.RAW);
+                image = frameGrabber.grab();
+            }
+            final IplImage initImage = image;
             final int initWidth    = initImage.width();
             final int initHeight   = initImage.height();
-            final int initChannels = initImage.nChannels();
+            final int initChannels = frameGrabber.getSensorPattern() != -1L ? 4 : initImage.nChannels();
             final int initDepth    = initImage.depth();
 
             if (initWidth != cameraDevice.imageWidth || initHeight != cameraDevice.imageHeight) {
@@ -642,13 +735,24 @@ public class TrackingWorker extends SwingWorker {
             }
 
             // allocate memory for all images and load video
-            undistortedCameraImage  = IplImage.createCompatible(initImage);
+            int minPyramidLevel = alignerSettings.getMinPyramidLevel();
+            undistortedCameraImage  = IplImage.create(initWidth >> minPyramidLevel,
+                    initHeight >> minPyramidLevel, initDepth, initChannels);
             distortedProjectorImage = IplImage.create(projectorDevice.imageWidth,
                     projectorDevice.imageHeight, IPL_DEPTH_8U, initChannels);
             projectorImages = new IplImage[]
                 { IplImage.createCompatible(distortedProjectorImage),
                   IplImage.createCompatible(distortedProjectorImage) };
             projectorImageIndex = 0;
+            if (trackingSettings.useOpenCL) {
+                grabbedImageCL            = contextCL.createCLImage(initImage);
+                undistortedCameraImageCL  = //contextCL.createCLImage(undistortedCameraImage);
+                        contextCL.getCLContext().createImage2d(
+                        undistortedCameraImage.width(), undistortedCameraImage.height(),
+                        grabbedImageCL.getFormat().setImageChannelDataType(ChannelType.FLOAT));
+                distortedProjectorImageCL = contextCL.createCLImage(distortedProjectorImage);
+                projectorImageCL          = contextCL.createCLImage(projectorImages[0]);
+            }
 
             realityAugmentor = new RealityAugmentor(realityAugmentorSettings,
                     objectFinderSettings, markerDetectorSettings, virtualBallSettings,
@@ -668,8 +772,9 @@ public class TrackingWorker extends SwingWorker {
             cameraInitFloatImages = new IplImage[projectorInitFloatImages.length];
             for (int i = 0; i < projectorInitFloatImages.length; i++) {
                 projectorInitImages[i]   = IplImage.createCompatible(distortedProjectorImage);
-                cameraInitImages[i]      = IplImage.createCompatible(undistortedCameraImage);
-                cameraInitFloatImages[i] = IplImage.create(initWidth, initHeight, IPL_DEPTH_32F, initChannels);
+                cameraInitImages[i]      = IplImage.create(initWidth, initHeight, initDepth, initChannels);
+                cameraInitFloatImages[i] = IplImage.create(undistortedCameraImage.width(),
+                        undistortedCameraImage.height(), IPL_DEPTH_32F, initChannels);
                 cvConvertScale(projectorInitFloatImages[i], projectorInitImages[i], 255, 0);
                 projectorDevice.distort(projectorInitImages[i], distortedProjectorImage);
                 cvCopy(distortedProjectorImage, projectorInitImages[i]);
@@ -677,7 +782,7 @@ public class TrackingWorker extends SwingWorker {
 
             if (trackingSettings.outputVideoFile != null) {
                 frameRecorder = new FFmpegFrameRecorder(trackingSettings.outputVideoFile,
-                        initWidth, initHeight);
+                        undistortedCameraImage.width(), undistortedCameraImage.height());
                 frameRecorder.start();
             } else {
                 frameRecorder = null;
@@ -720,6 +825,8 @@ public class TrackingWorker extends SwingWorker {
             frameRecorder = null;
         }
 
+        contextCL = null;
+
         roiPts = null;
         transformer = null;
         parameters = lastParameters = tempParameters = null;
@@ -759,5 +866,4 @@ public class TrackingWorker extends SwingWorker {
         // forces release of native memory
         System.gc();
     }
-
 }
