@@ -72,6 +72,14 @@ I am currently an active member of the Okutomi & Tanaka Laboratory, Tokyo Instit
 
 
 ==Changes==
+===February 18, 2012===
+ * `TrackingWorker` now fully support tracking with OpenCL and OpenGL acceleration (when `useOpenCL` is checked)
+ * New `TrackingWorker.projectorBufferingSize` (in number of frames to buffer) and `proCamPhaseShift` (in milliseconds) settings to compensate for the delay of the projector display, and of the camera capture as well, while still allowing processing at high FPS
+ * Accelerated and parallelized execution of `RealityAugmentor`
+ * Updated `ObjectFinder` adding `useFLANN` to its `Settings` properties, letting it use FLANN via OpenCV
+ * Cleaned up and optimized `HandMouse`
+ * Renamed some `Settings` properties here and there to correct typos and reflect better their meanings
+
 ===January 8, 2012===
  * Should now have an easier time automatically finding OpenCV libraries inside standard directories such as `/usr/local/lib/`, `/opt/local/lib/`, and `C:\opencv\`, even when they are not part of the system configuration or PATH
  * New `PS3EyeFrameGrabber` from Jiri Masa can now grab images using the SDK from Code Laboratories

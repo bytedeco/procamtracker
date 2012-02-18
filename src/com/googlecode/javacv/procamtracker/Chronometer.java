@@ -35,13 +35,13 @@ import com.googlecode.javacv.cpp.opencv_core.IplImage;
  * @author Samuel Audet
  */
 public class Chronometer {
-    Chronometer(Rectangle roi) {
-        this(roi, -1);
+    Chronometer(Rectangle roi, int imageType) {
+        this(roi, imageType, -1);
     }
-    Chronometer(Rectangle roi, long startTime) {
+    Chronometer(Rectangle roi, int imageType, long startTime) {
         this.roi = (Rectangle)roi.clone();
         this.startTime = startTime;
-        this.chronoImage = new BufferedImage(roi.width, roi.height, BufferedImage.TYPE_3BYTE_BGR);
+        this.chronoImage = new BufferedImage(roi.width, roi.height, imageType);
         this.chronoGraphics = (Graphics2D)chronoImage.getGraphics();
 
         Font bigFont, smallFont;

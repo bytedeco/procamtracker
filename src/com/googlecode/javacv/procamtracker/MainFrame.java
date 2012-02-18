@@ -50,6 +50,7 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 import javax.media.opengl.GLProfile;
+import javax.media.opengl.Threading;
 import javax.swing.Action;
 import javax.swing.ActionMap;
 import javax.swing.InputMap;
@@ -186,7 +187,7 @@ public class MainFrame extends javax.swing.JFrame implements
                 @Override public void close() throws SecurityException { }
             });
 
-            cvRedirectError(new JavaCvErrorCallback(true, MainFrame.this) {
+            cvRedirectError(new JavaCvErrorCallback() {
                 @Override public int call(int status, String func_name, String err_msg,
                         String file_name, int line, Pointer userdata) {
                     super.call(status, func_name, err_msg, file_name, line, userdata);
@@ -272,13 +273,13 @@ public class MainFrame extends javax.swing.JFrame implements
 
         // hide settings we do not need from the user...
         editors.put("triggerMode", null);
-        editors.put("colorMode", null);
+        editors.put("imageMode", null);
         editors.put("timeout", null);
-        editors.put("numBuffers", null);
-        editors.put("gammaTgamma", null);
         editors.put("parametersFilename", null);
         editors.put("deviceFilename", null);
+        editors.put("useOpenGL", null);
         editors.put("objectImage", null);
+        editors.put("gammaTgamma", null);
         editors.put("outputVideoFilename", null);
         editors.put("objectImageFilename", null);
         editors.put("projectorImageFilename", null);
@@ -940,6 +941,8 @@ public class MainFrame extends javax.swing.JFrame implements
     */
     public static void main(final String args[]) {
         try {
+            Threading.disableSingleThreading();
+            //System.setProperty("sun.java2d.opengl","false");
             GLProfile.initSingleton();
         } catch (Throwable t) { }
 

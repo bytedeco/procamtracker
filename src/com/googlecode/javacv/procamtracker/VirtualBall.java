@@ -53,7 +53,8 @@ public class VirtualBall {
         double friction   = 0.0;
         double stickiness = 5.0;
         double radius     = 20.0;
-        CvScalar color    = CvScalar.RED;
+        CvScalar colorBGR = cvScalar(0, 0, 255, 0); // red
+        CvScalar colorRGB = cvScalar(255, 0, 0, 0); // red
 
 //        public double[] getInitialRoiPts() {
 //            return initialRoiPts;
@@ -123,15 +124,18 @@ public class VirtualBall {
         }
 
         public Color getColor() {
-            return new Color((float)color.red()  /255,
-                             (float)color.green()/255,
-                             (float)color.blue() /255);
+            return new Color((float)colorRGB.val(0)/255,
+                             (float)colorRGB.val(1)/255,
+                             (float)colorRGB.val(2)/255);
         }
         public void setColor(Color color) {
             float[] rgb = color.getRGBComponents(null);
-            this.color.red  (rgb[0]*255);
-            this.color.green(rgb[1]*255);
-            this.color.blue (rgb[2]*255);
+            this.colorRGB.val(0, rgb[0]*255);
+            this.colorRGB.val(1, rgb[1]*255);
+            this.colorRGB.val(2, rgb[2]*255);
+            this.colorBGR.val(0, rgb[2]*255);
+            this.colorBGR.val(1, rgb[1]*255);
+            this.colorBGR.val(2, rgb[0]*255);
         }
     }
 
@@ -365,7 +369,8 @@ public class VirtualBall {
         center.y((int)Math.round((position[1] - (roi != null ? roi.yOffset() : 0))*(1<<16)));
 //System.out.println("drawn at " + position[0] + " " + position[1]);
         cvCircle(image, center, (int)Math.round(settings.radius*(1<<16)),
-                settings.color, CV_FILLED, CV_AA, 16);
+                image.nChannels() == 4 ? settings.colorRGB : settings.colorBGR,
+                CV_FILLED, CV_AA, 16);
 
         this.roiPts = roiPts.clone();
     }
