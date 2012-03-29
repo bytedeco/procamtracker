@@ -102,6 +102,6 @@ public class Chronometer {
         if (roi.y < 0) {
             roi.y += image.height();
         }
-        image.copyFrom(chronoImage, 1.0, roi);
+        image.copyFrom(chronoImage, 1.0, image.nChannels() == 4, roi);
     }
 }

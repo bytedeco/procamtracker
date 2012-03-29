@@ -19,17 +19,6 @@
 
 package com.googlecode.javacv.procamtracker;
 
-import java.awt.EventQueue;
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.media.opengl.GLContext;
-import javax.swing.SwingWorker;
 import com.googlecode.javacpp.Pointer;
 import com.googlecode.javacv.BaseChildSettings;
 import com.googlecode.javacv.BufferRing;
@@ -55,10 +44,21 @@ import com.jogamp.opencl.CLImage2d;
 import com.jogamp.opencl.CLImageFormat;
 import com.jogamp.opencl.CLImageFormat.ChannelType;
 import com.jogamp.opencl.gl.CLGLImage2d;
+import java.awt.EventQueue;
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.media.opengl.GLContext;
+import javax.swing.SwingWorker;
 
+import static com.googlecode.javacv.cpp.avutil.*;
 import static com.googlecode.javacv.cpp.opencv_core.*;
 import static com.googlecode.javacv.cpp.opencv_imgproc.*;
-import static com.googlecode.javacv.cpp.avutil.*;
 
 /**
  *
@@ -266,7 +266,7 @@ public class TrackingWorker extends SwingWorker {
         try {
             RealityAugmentor.VirtualSettings virtualSettings = realityAugmentor.getVirtualSettings();
             if (aligner == null || (virtualSettings != null && virtualSettings.projectionType !=
-                    RealityAugmentor.VirtualSettings.ProjectionType.FIXED)) {
+                    RealityAugmentor.ProjectionType.FIXED)) {
                 ProjectorBuffer pb = projectorBufferRing.get(1);
                 if (trackingSettings.useOpenCL) {
                     ((ProCamTransformerCL)transformer).setProjectorImageCL(pb.imageCL, 0, maxLevel);
@@ -307,7 +307,7 @@ public class TrackingWorker extends SwingWorker {
                     contextCL.remap(grabbedImageCL, undistortedCameraImageCL,
                             cameraMapxCL, cameraMapyCL, frameGrabber.getSensorPattern());
 //contextCL.readImage(undistortedCameraImageCL, cameraInitFloatImages[0], true);
-//monitorWindows[1].showImage(cameraInitFloatImages[0]);
+//monitorWindows[1].showImage(cameraInitFloatImages[0], true);
                     if (aligner != null) {
                         ((GNImageAlignerCL)aligner).setTargetImageCL(undistortedCameraImageCL);
                     }
@@ -437,7 +437,8 @@ public class TrackingWorker extends SwingWorker {
         cameraDevice.setMapsPyramidLevel(0);
         IplImage cameraTempInit = cameraDevice.undistort(cameraInitImages[1]);
         if (monitorWindows != null) {
-            monitorWindows[0].showImage(cameraTempInit);
+            boolean flipChannels = cameraTempInit.nChannels() == 4;
+            monitorWindows[0].showImage(cameraTempInit, flipChannels);
         }
         roiPts = realityAugmentor.acquireRoi(monitorWindows == null ? null : monitorWindows[0],
                 trackingSettings.getMonitorWindowsScale(), cameraTempInit, 0);
@@ -445,6 +446,9 @@ public class TrackingWorker extends SwingWorker {
             //throw new Exception("Error: Could not acquire the ROI.");
             return false;
         }
+        final RealityAugmentor.ObjectSettings objectSettings = realityAugmentor.getObjectSettings();
+        final boolean surfaceHasTexture = objectSettings != null && objectSettings.isSurfaceHasTexture();
+        final double[] referencePoints = surfaceHasTexture ? roiPts : null;
 
         // distortion removal and floating-point conversion for initialization
         cameraDevice.setMapsPyramidLevel(minLevel);
@@ -482,14 +486,14 @@ public class TrackingWorker extends SwingWorker {
         }
         logger.info(infoLogString + ")");
         logger.info("initializing plane parameters...");
-        CvMat n = reflectanceInitializer.initializePlaneParameters(reflectanceImage,
-                cameraInitFloatImages[2], roiPts, gainAmbientLight);
-        logger.info("initial n = " + n.toString(12));
+        CvMat n0 = reflectanceInitializer.initializePlaneParameters(surfaceHasTexture ?
+                reflectanceImage : null, cameraInitFloatImages[2], referencePoints, roiPts, gainAmbientLight);
+        logger.info("initial n = " + (n0 == null ? null : n0.toString(12)));
 
         // create our image transformer and its initial parameters
         transformer = trackingSettings.useOpenCL ?
-                new ProCamTransformerCL(contextCL, roiPts, cameraDevice, projectorDevice, n) :
-                new ProCamTransformer(roiPts, cameraDevice, projectorDevice, n);
+                new ProCamTransformerCL(contextCL, referencePoints, cameraDevice, projectorDevice, n0) :
+                new ProCamTransformer(referencePoints, cameraDevice, projectorDevice, n0);
         parameters = transformer.createParameters();
         final int gainAmbientLightStart = parameters.size() - gainAmbientLight.length;
         final int gainAmbientLightEnd   = parameters.size();
@@ -505,9 +509,8 @@ public class TrackingWorker extends SwingWorker {
             frameGrabber.setImageMode(ImageMode.RAW);
         }
 
-        RealityAugmentor.ObjectSettings objectSettings = realityAugmentor.getObjectSettings();
-        if (objectSettings != null && objectSettings.objectRoiAcquisition ==
-                RealityAugmentor.ObjectSettings.ObjectRoiAcquisition.MARKER_DETECTOR) {
+        if (objectSettings != null && objectSettings.roiAcquisitionMethod ==
+                RealityAugmentor.RoiAcquisitionMethod.MARKER_DETECTOR) {
             logger.info("\niteratingTime  iterations  objectiveRMSE  markerErrors  markerErrorsRunningAverage\n" +
                           "----------------------------------------------------------------------------------");
         } else {
@@ -551,10 +554,10 @@ public class TrackingWorker extends SwingWorker {
 
         // perform tracking via iterative minimization
         aligner = trackingSettings.useOpenCL ? 
-                new GNImageAlignerCL((ProCamTransformerCL)transformer, parameters,
-                        reflectanceImageCL, roiPts, undistortedCameraImageCL, alignerSettings) :
-                new GNImageAligner(transformer, parameters,
-                        reflectanceImage, roiPts, undistortedCameraImage, alignerSettings);
+                new GNImageAlignerCL((ProCamTransformerCL)transformer, parameters, surfaceHasTexture ?
+                        reflectanceImageCL : null, roiPts, undistortedCameraImageCL, alignerSettings) :
+                new GNImageAligner(transformer, parameters, surfaceHasTexture ?
+                        reflectanceImage : null, roiPts, undistortedCameraImage, alignerSettings);
 
         long timeMax = trackingSettings.getIteratingTimeMax()*1000000;
         double[] delta = new double[parameters.size()+1];
@@ -613,23 +616,12 @@ public class TrackingWorker extends SwingWorker {
             parameters = (ProCamTransformer.Parameters)aligner.getParameters();
 //System.out.println(parameters);
 
-//            IplImage res = aligner.getResidualImage();
-//            double[] dstRoiPts = aligner.getTransformedRoiPts();
-//            double vx = dstRoiPts[2] - dstRoiPts[0];
-//            double vy = dstRoiPts[3] - dstRoiPts[1];
-//            CvPoint points = new CvPoint((byte)16,
-//                    dstRoiPts[0] +   vx/3,
-//                    dstRoiPts[1] +   vy/3,
-//                    dstRoiPts[0] + 2*vx/3,
-//                    dstRoiPts[1] + 2*vy/3,
-//                    (dstRoiPts[0]+dstRoiPts[2]+dstRoiPts[4]+dstRoiPts[6])/4,
-//                    (dstRoiPts[1]+dstRoiPts[3]+dstRoiPts[5]+dstRoiPts[7])/4);
-//            cvFillConvexPoly(res, points, 3, cvScalarAll(0.1), 8, 16);
-
             long auditTime = System.nanoTime();
             // reset to previous values outlying gain and ambient light values
             boolean resetGainAmbientLight = false;
-            for (int i = gainAmbientLightStart; i < gainAmbientLightEnd; i++) {
+            int from = parameters.size() - transformer.getNumGains() - transformer.getNumBiases();
+            int to   = parameters.size();
+            for (int i = from; i < to; i++) {
                 double p = parameters.get(i);
                 if (p < 0 || p > 2) {
                     resetGainAmbientLight = true;
@@ -637,7 +629,7 @@ public class TrackingWorker extends SwingWorker {
                 }
             }
             if (resetGainAmbientLight) {
-                for (int i = gainAmbientLightStart; i < gainAmbientLightEnd; i++) {
+                for (int i = from; i < to; i++) {
                     parameters.set(i, lastParameters.get(i));
                 }
                 aligner.setParameters(parameters);
@@ -683,7 +675,23 @@ public class TrackingWorker extends SwingWorker {
                 if (images == null) {
                     images = aligner.getImages();
                 }
-                handMouse.update(images, p, aligner.getRoi(), aligner.getTransformedRoiPts());
+                CvRect roi = aligner.getRoi();
+                double[] roiPts = aligner.getTransformedRoiPts();
+
+//                //int w = cameraDevice.imageWidth, h = cameraDevice.imageHeight;
+//                //CvRect roi = cvRect(0, 0, w, h);
+//                //double[] roiPts = { 0.0, 0.0,  w, 0.0,  w, h,  0.0, h };
+//                double vx = roiPts[2] - roiPts[0];
+//                double vy = roiPts[3] - roiPts[1];
+//                CvPoint points = new CvPoint((byte)(16 - p),
+//                        roiPts[0] +   vx/3, roiPts[1] +   vy/3,
+//                        roiPts[0] + 2*vx/3, roiPts[1] + 2*vy/3,
+//                        (roiPts[0]+roiPts[2]+roiPts[4]+roiPts[6])/4,
+//                        (roiPts[1]+roiPts[3]+roiPts[5]+roiPts[7])/4);
+//                cvFillConvexPoly(images[3], points, 3, cvScalarAll(0.2), 8, 16);
+//                //cvSet(images[4], CvScalar.WHITE);
+
+                handMouse.update(images, p, roi, roiPts);
             }
 
             long updateTime = System.nanoTime();
@@ -745,7 +753,7 @@ public class TrackingWorker extends SwingWorker {
             // update the projector and camera images
             RealityAugmentor.VirtualSettings virtualSettings = realityAugmentor.getVirtualSettings();
             if (virtualSettings != null && virtualSettings.projectionType ==
-                    RealityAugmentor.VirtualSettings.ProjectionType.FIXED) {
+                    RealityAugmentor.ProjectionType.FIXED) {
                 doCamera.run();
             } else if (trackingSettings.useOpenCL) {
                 doCamera.run();
@@ -762,6 +770,7 @@ public class TrackingWorker extends SwingWorker {
                     handMouse.getY(), handMouse.isClick(), lastParameters);
 
             // the next camera frame will hopefully correspond to projectorBufferRing.get()
+            // if not, we should play with projectorBufferingSize and proCamPhaseShift
             projectorBufferRing.position(projectorBufferRing.position()+1);
 
             long endTime = System.nanoTime();
@@ -942,6 +951,7 @@ public class TrackingWorker extends SwingWorker {
             // get the three projector frames for initialization
             GNImageAligner.Settings s = alignerSettings.clone();
             // prepare settings for maximum accuracy
+            s.setAlphaTikhonov(0);
             s.setDeltaMin(0);
             s.setLineSearch(new double[] { 1.0, 1.0/2, 1.0/4, 1.0/8, 1.0/16, 1.0/32, 1.0/64, 1.0/128 });
             s.setThresholdsOutlier(new double[] { 0.0 });

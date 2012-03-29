@@ -68,10 +68,14 @@ Please keep me informed of any updates or fixes you make to the code so that I m
 
 
 ==Acknowledgments==
-I am currently an active member of the Okutomi & Tanaka Laboratory, Tokyo Institute of Technology, supported by a scholarship from the Ministry of Education, Culture, Sports, Science and Technology (MEXT) of the Japanese Government.
+This project was conceived at the Okutomi & Tanaka Laboratory, Tokyo Institute of Technology, where I was supported by a generous scholarship from the Ministry of Education, Culture, Sports, Science and Technology (MEXT) of the Japanese Government. I extend my gratitude further to all who have reported bugs, donated code, or made suggestions for improvements!
 
 
 ==Changes==
+===March 29, 2012===
+ * Added new `RealityAugmentor.ObjectSettings.surfaceHasTexture` property to have ProCamTracker rectify the projector display on textureless surface planes, using either the `FULL_FRAME` or the centered `HALF_FRAME` of the camera image, specified by the `roiAcquisitionMethod` property
+ * Renamed a few other `Settings` properties to reflect better their meanings
+
 ===February 18, 2012===
  * `TrackingWorker` now fully support tracking with OpenCL and OpenGL acceleration (when `useOpenCL` is checked)
  * New `TrackingWorker.projectorBufferingSize` (in number of frames to buffer) and `proCamPhaseShift` (in milliseconds) settings to compensate for the delay of the projector display, and of the camera capture as well, while still allowing processing at high FPS

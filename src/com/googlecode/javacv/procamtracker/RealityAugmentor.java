@@ -19,39 +19,6 @@
 
 package com.googlecode.javacv.procamtracker;
 
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.DisplayMode;
-import java.awt.Graphics2D;
-import java.awt.GraphicsDevice;
-import java.awt.Image;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.Robot;
-import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
-import java.awt.event.InputEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
-import java.awt.image.ComponentSampleModel;
-import java.awt.image.DataBufferByte;
-import java.awt.image.DataBufferInt;
-import java.awt.image.SinglePixelPackedSampleModel;
-import java.awt.image.WritableRaster;
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.logging.Logger;
-import javax.imageio.ImageIO;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
 import com.googlecode.javacv.BaseSettings;
 import com.googlecode.javacv.BaseChildSettings;
 import com.googlecode.javacv.CanvasFrame;
@@ -68,6 +35,35 @@ import com.googlecode.javacv.Parallel;
 import com.googlecode.javacv.ProCamTransformer;
 import com.googlecode.javacv.ProjectiveDevice;
 import com.googlecode.javacv.ProjectiveTransformer;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.DisplayMode;
+import java.awt.Graphics2D;
+import java.awt.GraphicsDevice;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.Robot;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
+import java.awt.image.SinglePixelPackedSampleModel;
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.logging.Logger;
+import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
 
 import static com.googlecode.javacv.cpp.avutil.*;
 import static com.googlecode.javacv.cpp.opencv_core.*;
@@ -111,12 +107,14 @@ public class RealityAugmentor {
         }
     }
 
+    public static enum RoiAcquisitionMethod { MOUSE_CLICKS, OBJECT_FINDER, MARKER_DETECTOR, WHOLE_FRAME, HALF_FRAME }
+
     public static class ObjectSettings extends BaseSettings implements CleanBeanNode.ActionableBean {
 
         String name = "ObjectSettings";
-        File objectImageFile = null;
-        public static enum ObjectRoiAcquisition { USER, OBJECT_FINDER, MARKER_DETECTOR }
-        ObjectRoiAcquisition objectRoiAcquisition = ObjectRoiAcquisition.USER;
+        File textureImageFile = null;
+        RoiAcquisitionMethod roiAcquisitionMethod = RoiAcquisitionMethod.MOUSE_CLICKS;
+        boolean surfaceHasTexture = true;
 
         @Override public String getName() {
             return name;
@@ -125,25 +123,32 @@ public class RealityAugmentor {
             firePropertyChange("name", this.name, this.name = name);
         }
 
-        public File getObjectImageFile() {
-            return objectImageFile;
+        public File getTextureImageFile() {
+            return textureImageFile;
         }
-        public void setObjectImageFile(File objectImageFile) {
-            this.objectImageFile = objectImageFile;
+        public void setTextureImageFile(File textureImageFile) {
+            this.textureImageFile = textureImageFile;
         }
-        public String getObjectImageFilename() {
-            return objectImageFile == null ? "" : objectImageFile.getPath();
+        public String getTextureImageFilename() {
+            return textureImageFile == null ? "" : textureImageFile.getPath();
         }
-        public void setObjectImageFilename(String objectImageFilename) {
-            this.objectImageFile = objectImageFilename == null ||
-                    objectImageFilename.length() == 0 ? null : new File(objectImageFilename);
+        public void setTextureImageFilename(String textureImageFilename) {
+            this.textureImageFile = textureImageFilename == null ||
+                    textureImageFilename.length() == 0 ? null : new File(textureImageFilename);
         }
 
-        public ObjectRoiAcquisition getObjectRoiAcquisition() {
-            return objectRoiAcquisition;
+        public RoiAcquisitionMethod getRoiAcquisitionMethod() {
+            return roiAcquisitionMethod;
         }
-        public void setObjectRoiAcquisition(ObjectRoiAcquisition objectRoiAcquisition) {
-            this.objectRoiAcquisition = objectRoiAcquisition;
+        public void setRoiAcquisitionMethod(RoiAcquisitionMethod roiAcquisitionMethod) {
+            this.roiAcquisitionMethod = roiAcquisitionMethod;
+        }
+
+        public boolean isSurfaceHasTexture() {
+            return surfaceHasTexture;
+        }
+        public void setSurfaceHasTexture(boolean surfaceHasTexture) {
+            this.surfaceHasTexture = surfaceHasTexture;
         }
 
         @Override public VirtualSettings[] toArray() {
@@ -168,6 +173,8 @@ public class RealityAugmentor {
         }
     }
 
+    public static enum ProjectionType { TRACKED, FIXED }
+
     public static class VirtualSettings extends BaseChildSettings implements CleanBeanNode.ActionableBean {
 
         String name = "VirtualSettings";
@@ -177,7 +184,6 @@ public class RealityAugmentor {
         int desktopScreenHeight = 452;
         File projectorImageFile = null;
         File projectorVideoFile = null;
-        public static enum ProjectionType { TRACKED, FIXED }
         ProjectionType projectionType = ProjectionType.TRACKED;
         Rectangle chronometerBounds = new Rectangle(0, -50, 150, 50);
         boolean virtualBallEnabled = false;
@@ -312,17 +318,20 @@ public class RealityAugmentor {
     private Robot robot = null;
     private BufferedImage handMouseCursor = null;
     private FrameGrabber videoToProject = null;
-    private IplImage imageToProject = null, objectImage = null;
+    private IplImage imageToProject = null, textureImage = null;
     private Chronometer chronometer = null;
     private VirtualBall virtualBall = null;
 
     private ProjectiveTransformer composeWarper = new ProjectiveTransformer();
     private ProjectiveTransformer.Parameters[] composeParameters = { composeWarper.createParameters() };
-    private ProjectiveTransformer.Data[] composeData = { new ProjectiveTransformer.Data() };
+    //private ProjectiveTransformer.Data[] composeData = { new ProjectiveTransformer.Data() };
     private CvMat srcPts = CvMat.create(4, 1, CV_64F, 2), dstPts = CvMat.create(4, 1, CV_64F, 2);
     private CvMat tempH  = CvMat.create(3, 3);
-    private CvPoint temppts = new CvPoint(4), corners = new CvPoint(4), corners2 = new CvPoint(corners);
+    private CvPoint tempPts = new CvPoint(4), corners = new CvPoint(4), corners2 = new CvPoint(corners);
     private CvRect roi = new CvRect(), maxroi = new CvRect();
+    private CvBox2D box = new CvBox2D();
+    private CvMat boxPts = CvMat.create(4, 1, CV_32F, 2);
+    private CvPoint2D32f boxPtsData = new CvPoint2D32f(boxPts.data_fl());
     private double markerError   = 0;
     private int markerErrorCount = 0;
 
@@ -382,7 +391,7 @@ public class RealityAugmentor {
         } else if (virtualSettings.projectorVideoFile != null) {
             if (virtualSettings.projectorImageFile != null) {
                 // loads alpha channel
-                imageToProject = IplImage.createFrom(ImageIO.read(virtualSettings.projectorImageFile));
+                imageToProject = IplImage.createFrom(ImageIO.read(virtualSettings.projectorImageFile), 1.0, true);
                 if (imageToProject == null) {
                     throw new Exception("Error: Could not load projectorImageFile named \"" +
                             virtualSettings.projectorImageFile + "\".");
@@ -450,22 +459,29 @@ public class RealityAugmentor {
 
     public double[] acquireRoi(CanvasFrame monitorWindow, double monitorWindowScale,
             IplImage cameraImage, int pyramidLevel) throws Exception {
+        final int w = cameraImage.width();
+        final int h = cameraImage.height();
         roiPts = null;
         markerError      = 0;
         markerErrorCount = 0;
 
         for (ObjectSettings os : settings.toArray()) {
-            // in the grabbed camera images, acquire the region of interest
-            ObjectSettings.ObjectRoiAcquisition ora = os.getObjectRoiAcquisition();
-            if (ora != ObjectSettings.ObjectRoiAcquisition.USER && (os.objectImageFile == null ||
-                    (objectImage = cvLoadImage(os.objectImageFile.getAbsolutePath())) == null)) {
-                throw new Exception("Error: Could not load the object image file \"" +
-                        os.objectImageFile + "\" for " + ora + ".");
+            File f = os.textureImageFile;
+            RoiAcquisitionMethod ram = os.roiAcquisitionMethod;
+            if ((ram == RoiAcquisitionMethod.OBJECT_FINDER || ram == RoiAcquisitionMethod.MARKER_DETECTOR) &&
+                    (f == null || (textureImage = cvLoadImage(f.getAbsolutePath())) == null)) {
+                throw new Exception("Error: Could not load the object image file \"" + f + "\" for " + ram + ".");
             }
-            switch (ora) {
-                case USER:            roiPts = acquireRoiFromUser(monitorWindow, monitorWindowScale); break;
+            // in the grabbed camera images, acquire the region of interest
+            switch (ram) {
+                case MOUSE_CLICKS:    roiPts = acquireRoiFromMouseClicks(monitorWindow, monitorWindowScale); break;
                 case OBJECT_FINDER:   roiPts = acquireRoiFromObjectFinder  (cameraImage); break;
                 case MARKER_DETECTOR: roiPts = acquireRoiFromMarkerDetector(cameraImage); break;
+                case WHOLE_FRAME:     roiPts = new double[] { 0.0, 0.0,  w, 0.0,  w, h,  0.0, h }; break;
+                case HALF_FRAME:
+                    double dw = w*(2-JavaCV.SQRT2)/4;
+                    double dh = h*(2-JavaCV.SQRT2)/4;
+                    roiPts = new double[] { dw, dh,  w-dw, dh,  w-dw, h-dh,  dw, h-dh }; break;
                 default: assert false;
             }
 
@@ -491,10 +507,10 @@ public class RealityAugmentor {
         return roiPts;
     }
 
-    private double[] acquireRoiFromUser(final CanvasFrame monitorWindow,
+    private double[] acquireRoiFromMouseClicks(final CanvasFrame monitorWindow,
             final double monitorWindowScale) throws Exception {
         if (monitorWindow == null) {
-            throw new Exception("Error: No monitor window. Could not acquire ROI from user.");
+            throw new Exception("Error: No monitor window. Could not acquire ROI from mouse clicks.");
         }
         Toolkit t = Toolkit.getDefaultToolkit();
         Dimension d = t.getBestCursorSize(15, 15);
@@ -556,11 +572,11 @@ public class RealityAugmentor {
 
     private double[] acquireRoiFromObjectFinder(IplImage cameraImage) throws Exception {
         IplImage grey1, grey2;
-        if (objectImage.depth() == 1) {
-            grey1 = objectImage;
+        if (textureImage.depth() == 1) {
+            grey1 = textureImage;
         } else {
-            grey1 = IplImage.create(objectImage.width(), objectImage.height(), objectImage.depth(), 1);
-            cvCvtColor(objectImage, grey1, objectImage.depth() == 4 ? CV_RGBA2GRAY : CV_BGR2GRAY);
+            grey1 = IplImage.create(textureImage.width(), textureImage.height(), textureImage.depth(), 1);
+            cvCvtColor(textureImage, grey1, textureImage.depth() == 4 ? CV_RGBA2GRAY : CV_BGR2GRAY);
         }
         if (cameraImage.depth() == 1) {
             grey2 = cameraImage;
@@ -572,7 +588,7 @@ public class RealityAugmentor {
         objectFinderSettings.setObjectImage(grey1);
         ObjectFinder objectFinder = new ObjectFinder(objectFinderSettings);
         double[] roiPts = objectFinder.find(grey2);
-        if (grey1 != objectImage) {
+        if (grey1 != textureImage) {
             grey1.release();
         }
         if (grey2 != cameraImage) {
@@ -583,8 +599,8 @@ public class RealityAugmentor {
 
     private double[] acquireRoiFromMarkerDetector(IplImage cameraImage) throws Exception {
         markerDetector = new MarkerDetector(markerDetectorSettings);
-        Marker[] markersin = markerDetector.detect(objectImage, false);
-        String infoLogString = "objectImage marker centers = ";
+        Marker[] markersin = markerDetector.detect(textureImage, false);
+        String infoLogString = "textureImage marker centers = ";
         for (int i = 0; i < 4; i++) {
             for (Marker m : markersin) {
                 if (m.id == i) {
@@ -597,10 +613,10 @@ public class RealityAugmentor {
         logger.info(infoLogString);
         if (markersin == null || markersin.length == 0) {
 //            throw new Exception("Error: MarkerDetector detected no markers in \"" +
-//                    settings.objectImageFile + "\".");
+//                    settings.textureImageFile + "\".");
             return null;
         }
-        MarkedPlane markedPlane = new MarkedPlane(objectImage.width(), objectImage.height(), markersin, 1);
+        MarkedPlane markedPlane = new MarkedPlane(textureImage.width(), textureImage.height(), markersin, 1);
 
         Marker[] markersout = markerDetector.detect(cameraImage, false);
         infoLogString = "initial marker centers = ";
@@ -609,9 +625,9 @@ public class RealityAugmentor {
 //            throw new Exception("Error: MarkerDetector failed to match markers in the grabbed image.");
             return null;
         }
-        srcPts.put(0.0, 0.0,  objectImage.width(), 0.0,
-                objectImage.width(), objectImage.height(),  0.0, objectImage.height());
-        cvPerspectiveTransform(srcPts, dstPts, tempH);
+        dstPts.put(0.0, 0.0,  textureImage.width(), 0.0,
+                textureImage.width(), textureImage.height(),  0.0, textureImage.height());
+        cvPerspectiveTransform(dstPts, dstPts, tempH);
         double[] roiPts = dstPts.get();
 
         for (int i = 0; i < 4; i++) {
@@ -634,8 +650,8 @@ public class RealityAugmentor {
         if (desktopScreen != null && robot != null) {
             int w = videoToProject != null ? videoToProject.getImageWidth()  : imageToProject.width();
             int h = videoToProject != null ? videoToProject.getImageHeight() : imageToProject.height();
-            final int desktopMouseX = objectMouseX*w/objectImage.width();
-            final int desktopMouseY = objectMouseY*h/objectImage.height();
+            final int desktopMouseX = objectMouseX*w/(textureImage != null ? textureImage.width()  : projector.imageWidth);
+            final int desktopMouseY = objectMouseY*h/(textureImage != null ? textureImage.height() : projector.imageHeight);
             if (desktopMouseX >= 0 && desktopMouseY >= 0) {
 //                System.out.println("C  " + desktopMouseX + " " + desktopMouseY);
                 robot.mouseMove(desktopMouseX, desktopMouseY);
@@ -850,13 +866,12 @@ public class RealityAugmentor {
 //            System.out.println("A  " + imageMouseX + " " + imageMouseY);
         future = executor.submit(new Callable<CvRect>() { public CvRect call() throws Exception {
             int objectMouseX = -1, objectMouseY = -1;
-            if (imageMouseX >= 0 && imageMouseY >= 0) {
-                int w = objectImage.width(), h = objectImage.height();
-                srcPts.put(0.0, 0.0,  w, 0.0,  w, h,  0.0, h);
-                JavaCV.getPerspectiveTransform(srcPts.get(), roiPts, tempH);
+            if (imageMouseX >= 0 && imageMouseY >= 0 && textureImage != null) {
+                int w = textureImage.width(), h = textureImage.height();
+                double[] pts = { 0.0, 0.0,  w, 0.0,  w, h,  0.0, h };
+                JavaCV.getPerspectiveTransform(pts, roiPts, tempH);
                 composeParameters[0].compose(parameters.getSurfaceParameters().getH(), false, tempH, false);
-                dstPts.put(imageMouseX, imageMouseY);
-                composeWarper.transform(dstPts, dstPts, composeParameters[0], true);
+                composeWarper.transform(dstPts.put(imageMouseX, imageMouseY), dstPts, composeParameters[0], true);
                 objectMouseX = (int)Math.round(dstPts.get(0));
                 objectMouseY = (int)Math.round(dstPts.get(1));
     //            System.out.println("B  " + objectMouseX + " " + objectMouseY);
@@ -872,24 +887,79 @@ public class RealityAugmentor {
                 }
             }
 
+            int pw = projectorImage.width(), ph = projectorImage.height();
+            double[] projPts = { 0.0, 0.0,  pw, 0.0,  pw, ph,  0.0, ph };
             if (virtualSettings == null) {
                 cvSet(projectorImage, CvScalar.WHITE);
-                maxroi.x(0).y(0).width(projectorImage.width()).height(projectorImage.height());
+                maxroi.x(0).y(0).width(pw).height(ph);
                 return null;
             }
 
+            if (!objectSettings.surfaceHasTexture) {
+                // find on the plane the largest rectangle centered inside the projector
+                // region as well as the transformation to rectify the display
+                projector.getFrontoParallelH(projPts, parameters.getN(), tempH);
+                cvMatMul(projector.cameraMatrix, tempH, tempH);
+                cvInvert(tempH, tempH);
+                cvPerspectiveTransform(dstPts.put(projPts), dstPts, tempH);
+                box.angle(0).size().width(pw).height(ph);
+                JavaCV.boundedRect(boxPts.put(dstPts), box);
+                cvBoxPoints(box, boxPtsData);
+                CvPoint2D32f center = box.center();
+                double centerX = center.x();
+                double centerY = center.y();
+                for (int i = 0; i < 4; i++) {
+                    double x = boxPts.get(2*i    );
+                    double y = boxPts.get(2*i + 1);
+                    if (x > centerX) {
+                        if (y > centerY) {
+                            dstPts.put(0, x).put(1, y);
+                        } else {
+                            dstPts.put(6, x).put(7, y);
+                        }
+                    } else {
+                        if (y > centerY) {
+                            dstPts.put(2, x).put(3, y);
+                        } else {
+                            dstPts.put(4, x).put(5, y);
+                        }
+                    }
+                }
+                cvInvert(tempH, tempH);
+                cvPerspectiveTransform(dstPts, dstPts, tempH);
+//System.out.println(dstPts);
+                JavaCV.getPerspectiveTransform(projPts, dstPts.get(), tempH);
+                composeParameters[0].set(tempH, false);
+
+                if (imageMouseX >= 0 && imageMouseY >= 0) {
+                    composeParameters[0].compose(parameters.getProjectorParameters(), false, composeParameters[0], false);
+                    composeWarper.transform(dstPts.put(imageMouseX, imageMouseY), dstPts, composeParameters[0], true);
+                    objectMouseX = (int)Math.round(dstPts.get(0));
+                    objectMouseY = (int)Math.round(dstPts.get(1));
+        //            System.out.println("C  " + objectMouseX + " " + objectMouseY);
+                }
+            }
+
             IplImage frameImage = nextFrameImage(objectMouseX, objectMouseY, mouseClick);
-            if (virtualSettings.projectionType == VirtualSettings.ProjectionType.TRACKED) {
+            if (virtualSettings.projectionType == ProjectionType.TRACKED) {
                 int w = frameImage.width(), h = frameImage.height();
-                srcPts.put(0.0, 0.0,  w, 0.0,  w, h,  0.0, h);
-                JavaCV.getPerspectiveTransform(srcPts.get(), roiPts, tempH);
-                composeParameters[0].compose(parameters.getProjectorParameters(), true,
-                                             parameters.getSurfaceParameters(), false);
-                composeParameters[0].compose(composeParameters[0].getH(), false, tempH, false);
-                composeWarper.transform(srcPts, dstPts, composeParameters[0], false);
+                double[] framePts = { 0.0, 0.0,  w, 0.0,  w, h,  0.0, h };
+                if (objectSettings.surfaceHasTexture) {
+                    // track the ROI on the surface plane
+                    JavaCV.getPerspectiveTransform(framePts, roiPts, tempH);
+                    composeParameters[0].compose(parameters.getProjectorParameters(), true,
+                                                 parameters.getSurfaceParameters(), false);
+                    composeParameters[0].compose(composeParameters[0].getH(), false, tempH, false);
+                } else {
+                    // rectify the projector display on the plane
+                    composeParameters[0].set(tempH, false);
+                    JavaCV.getPerspectiveTransform(framePts, projPts, tempH);
+                    composeParameters[0].compose(composeParameters[0].getH(), false, tempH, false);
+                }
+                composeWarper.transform(dstPts.put(framePts), dstPts, composeParameters[0], false);
                 composeWarper.setFillColor(CvScalar.WHITE);
-                composeData[0].srcImg   = frameImage;
-                composeData[0].transImg = projectorImage;
+                //composeData[0].srcImg   = frameImage;
+                //composeData[0].transImg = projectorImage;
                 if (prevroi == null) {
                     composeWarper.transform(frameImage, projectorImage, null, 0, composeParameters[0], false);
                     //composeWarper.transform(composeData, null, composeParameters, null);
@@ -912,14 +982,13 @@ public class RealityAugmentor {
                     prevroi.x(roi.x()).y(roi.y()).width(roi.width()).height(roi.height());
                 }
             } else { // Settings.ProjectionType.FIXED
-                int w = projectorImage.width(), h = projectorImage.height();
-                dstPts.put(0.0, 0.0,  w, 0.0,  w, h,  0.0, h);
-                if (frameImage.width() == w && frameImage.height() == h) {
+                dstPts.put(0.0, 0.0,  pw, 0.0,  pw, ph,  0.0, ph);
+                if (frameImage.width() == pw && frameImage.height() == ph) {
                     cvCopy(frameImage, projectorImage);
                 } else {
                     cvResize(frameImage, projectorImage);
                 }
-                maxroi.x(0).y(0).width(w).height(h);
+                maxroi.x(0).y(0).width(pw).height(ph);
             }
 
             if (!virtualSettings.virtualBallEnabled) {
@@ -946,12 +1015,12 @@ public class RealityAugmentor {
         String infoLogString = "";
 
         // if we use the marker detector, compute the error with our tracking
-        if (objectSettings.objectRoiAcquisition == ObjectSettings.ObjectRoiAcquisition.MARKER_DETECTOR &&
-                markerDetector != null) {
+        if (objectSettings.roiAcquisitionMethod ==
+                RoiAcquisitionMethod.MARKER_DETECTOR && markerDetector != null) {
             Marker[] markers = new Marker[4];
             boolean missing;
             MarkerDetector.Settings ms = new MarkerDetector.Settings();
-            ms.setBinarizeKBlackMarkers(0.99);
+            ms.setThresholdKBlackMarkers(0.99);
             do {
                 Marker[] detected = markerDetector.detect(cameraImage, false);
                 for (Marker m : detected) {
@@ -965,9 +1034,9 @@ public class RealityAugmentor {
                         missing = true;
                     }
                 }
-                ms.setBinarizeKBlackMarkers(ms.getBinarizeKBlackMarkers()-0.05);
+                ms.setThresholdKBlackMarkers(ms.getThresholdKBlackMarkers()-0.05);
                 markerDetector.setSettings(ms);
-            } while (missing && ms.getBinarizeKBlackMarkers() > 0);
+            } while (missing && ms.getThresholdKBlackMarkers() > 0);
 
             transformer.transform(srcPts, dstPts, parameters, false);
 
@@ -991,19 +1060,18 @@ public class RealityAugmentor {
                         break;
                     }
                 }
-                temppts.position(j);
-                temppts.x((int)Math.round(dstPts.get(j*2)   * (1<<16-pyramidLevel)));
-                temppts.y((int)Math.round(dstPts.get(j*2+1) * (1<<16-pyramidLevel)));
+                tempPts.position(j);
+                tempPts.x((int)Math.round(dstPts.get(j*2)   * (1<<16-pyramidLevel)));
+                tempPts.y((int)Math.round(dstPts.get(j*2+1) * (1<<16-pyramidLevel)));
             }
             infoLogString += ")  " + (float)Math.sqrt(markerError/markerErrorCount);
 
-            cvPolyLine(monitorImage, temppts.position(0), new int[] { 4 }, 1, 1,
+            cvPolyLine(monitorImage, tempPts.position(0), new int[] { 4 }, 1, 1,
                     CV_RGB(0, monitorImage.highValue(), 0), 1, CV_AA, 16);
         } else {
-            dstPts.put(roiPts);
-            transformer.transform(dstPts, dstPts, parameters, false);
-            temppts.put((byte)(16-pyramidLevel), dstPts.get());
-            cvPolyLine(monitorImage, temppts.position(0), new int[] { 4 }, 1, 1,
+            transformer.transform(dstPts.put(roiPts), dstPts, parameters, false);
+            tempPts.put((byte)(16-pyramidLevel), dstPts.get());
+            cvPolyLine(monitorImage, tempPts.position(0), new int[] { 4 }, 1, 1,
                     CV_RGB(0, monitorImage.highValue(), 0), 1, CV_AA, 16);
         }
 

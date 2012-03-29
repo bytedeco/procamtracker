@@ -281,7 +281,7 @@ public class MainFrame extends javax.swing.JFrame implements
         editors.put("objectImage", null);
         editors.put("gammaTgamma", null);
         editors.put("outputVideoFilename", null);
-        editors.put("objectImageFilename", null);
+        editors.put("textureImageFilename", null);
         editors.put("projectorImageFilename", null);
         editors.put("projectorVideoFilename", null);
         editors.put("initialRoiPts", null);
