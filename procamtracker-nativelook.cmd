@@ -17,13 +17,13 @@ set JAVA=%SystemRoot%\SysWOW64\java
 if errorlevel 1 goto DEFAULT
 
 :SERVER
-start %JAVA%w -server %OPTIONS% -jar "%~dp0\procamtracker.jar" %*
+start %JAVA%w -server %OPTIONS% -jar "%~dp0\modules\procamtracker.jar" %*
 if errorlevel 1 goto PAUSE
 goto END
 
 :DEFAULT
 echo WARNING: Server JVM not available. Executing with default JVM...
-%JAVA%w %OPTIONS% -jar "%~dp0\procamtracker.jar" %*
+%JAVA%w %OPTIONS% -jar "%~dp0\modules\procamtracker.jar" %*
 if errorlevel 1 goto PAUSE
 goto END
 
