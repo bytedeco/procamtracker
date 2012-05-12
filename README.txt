@@ -17,7 +17,7 @@ Please install the following before running ProCamTracker:
   * Sun JDK  http://www.oracle.com/technetwork/java/javase/downloads/  or
   * IBM JDK  http://www.ibm.com/developerworks/java/jdk/  or
   * Java SE for Mac OS X  http://developer.apple.com/java/  etc.
- * OpenCV 2.3.1  http://sourceforge.net/projects/opencvlibrary/files/
+ * OpenCV 2.4.0  http://sourceforge.net/projects/opencvlibrary/files/
 
 As well as the following to enable processing with OpenCL and OpenGL:
  * JOCL and JOGL from JogAmp  http://jogamp.org/
@@ -73,7 +73,8 @@ This project was conceived at the Okutomi & Tanaka Laboratory, Tokyo Institute o
 
 
 ==Changes==
-===April xx, 2012===
+===May 12, 2012===
+ * Upgraded support to OpenCV 2.4.0
  * Added `pom.xml` and assembly files for Maven support and changed the directory structure of the source code to match Maven's standard directory layout
 
 ===March 29, 2012===
