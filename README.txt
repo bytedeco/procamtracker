@@ -17,7 +17,7 @@ Please install the following before running ProCamTracker:
   * Sun JDK  http://www.oracle.com/technetwork/java/javase/downloads/  or
   * IBM JDK  http://www.ibm.com/developerworks/java/jdk/  or
   * Java SE for Mac OS X  http://developer.apple.com/java/  etc.
- * OpenCV 2.4.0  http://sourceforge.net/projects/opencvlibrary/files/
+ * OpenCV 2.4.2  http://sourceforge.net/projects/opencvlibrary/files/
 
 As well as the following to enable processing with OpenCL and OpenGL:
  * JOCL and JOGL from JogAmp  http://jogamp.org/
@@ -25,14 +25,14 @@ As well as the following to enable processing with OpenCL and OpenGL:
 And please make sure your Java and OpenCV have the same bitness: *32-bit and 64-bit modules do not mix under any circumstances*. Further, ProCamTracker runs _a lot_ faster under the "server" JVM than the "client" JVM, but because of its bigger size, not all distributions of Java come with the server one.
 
 Additionally, for IIDC/DCAM cameras, Microsoft's Kinect stereo camera, the PS3 Eye, or other cameras supported via FFmpeg:
- * libdc1394 2.1.x (Linux and Mac OS X)  http://sourceforge.net/projects/libdc1394/files/
- * PGR FlyCapture 1.7~2.2 (Windows only)  http://www.ptgrey.com/products/pgrflycapture/
+ * libdc1394 2.1.x or or 2.2.x  http://sourceforge.net/projects/libdc1394/files/
+ * PGR FlyCapture 1.7~2.3 (Windows only)  http://www.ptgrey.com/products/pgrflycapture/
  * OpenKinect  http://openkinect.org/
  * CL Eye Platform SDK  http://codelaboratories.com/downloads/
- * FFmpeg 0.6.x or 0.7.x  http://ffmpeg.org/download.html
+ * FFmpeg 0.11.x  http://ffmpeg.org/download.html
   * Precompiled for Windows  http://ffmpeg.zeranoe.com/builds/  Known compatible builds:
-   * http://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-0.7.1-win32-shared.7z
-   * http://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-0.7.1-win64-shared.7z
+   * http://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-20120720-git-85761ef-win32-shared.7z
+   * http://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-20120720-git-85761ef-win64-shared.7z
 
 
 ==Usage==
@@ -73,6 +73,9 @@ This project was conceived at the Okutomi & Tanaka Laboratory, Tokyo Institute o
 
 
 ==Changes==
+===July 21, 2012 version 0.2===
+ * Upgraded support to OpenCV 2.4.2 and FFmpeg 0.11
+
 ===May 27, 2012 version 0.1===
  * Started using version numbers, friendly to tools like Maven, and placing packages in a sort of [http://maven2.javacv.googlecode.com/git/ Maven repository]
 
