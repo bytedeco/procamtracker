@@ -17,7 +17,7 @@ Please install the following before running ProCamTracker:
   * Sun JDK  http://www.oracle.com/technetwork/java/javase/downloads/  or
   * IBM JDK  http://www.ibm.com/developerworks/java/jdk/  or
   * Java SE for Mac OS X  http://developer.apple.com/java/  etc.
- * OpenCV 2.4.2  http://sourceforge.net/projects/opencvlibrary/files/
+ * OpenCV 2.4.3  http://sourceforge.net/projects/opencvlibrary/files/
 
 As well as the following to enable processing with OpenCL and OpenGL:
  * JOCL and JOGL from JogAmp  http://jogamp.org/
@@ -29,10 +29,10 @@ Additionally, for IIDC/DCAM cameras, Microsoft's Kinect stereo camera, the PS3 E
  * PGR FlyCapture 1.7~2.3 (Windows only)  http://www.ptgrey.com/products/pgrflycapture/
  * OpenKinect  http://openkinect.org/
  * CL Eye Platform SDK  http://codelaboratories.com/downloads/
- * FFmpeg 0.11.x  http://ffmpeg.org/download.html
+ * FFmpeg 1.0  http://ffmpeg.org/download.html
   * Precompiled for Windows  http://ffmpeg.zeranoe.com/builds/  Known compatible builds:
-   * http://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-20120720-git-85761ef-win32-shared.7z
-   * http://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-20120720-git-85761ef-win64-shared.7z
+   * http://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-20121029-git-11d695d-win32-shared.7z
+   * http://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-20121029-git-11d695d-win64-shared.7z
 
 
 ==Usage==
@@ -73,6 +73,9 @@ This project was conceived at the Okutomi & Tanaka Laboratory, Tokyo Institute o
 
 
 ==Changes==
+===November 4, 2012 version 0.3===
+ * Upgraded support to OpenCV 2.4.3 and FFmpeg 1.0
+
 ===July 21, 2012 version 0.2===
  * Upgraded support to OpenCV 2.4.2 and FFmpeg 0.11
 
