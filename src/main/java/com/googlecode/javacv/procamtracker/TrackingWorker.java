@@ -862,7 +862,7 @@ public class TrackingWorker extends SwingWorker {
             frameGrabber = cameraDevice.createFrameGrabber();
             frameGrabber.setImageMode(ImageMode.COLOR);
             if (trackingSettings.useOpenCL) {
-                frameGrabber.setPixelFormat(PIX_FMT_RGBA);
+                frameGrabber.setPixelFormat(AV_PIX_FMT_RGBA);
             }
             frameGrabber.start();
             IplImage image = frameGrabber.grab();

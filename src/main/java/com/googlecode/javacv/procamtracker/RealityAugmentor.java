@@ -376,9 +376,9 @@ public class RealityAugmentor {
                 videoToProject.setImageHeight(h);
                 videoToProject.setFrameRate(30);
                 switch (channels) {
-                    case 1: videoToProject.setPixelFormat(PIX_FMT_GRAY8); break;
-                    case 3: videoToProject.setPixelFormat(PIX_FMT_BGR24); break;
-                    case 4: videoToProject.setPixelFormat(PIX_FMT_RGBA);  break;
+                    case 1: videoToProject.setPixelFormat(AV_PIX_FMT_GRAY8); break;
+                    case 3: videoToProject.setPixelFormat(AV_PIX_FMT_BGR24); break;
+                    case 4: videoToProject.setPixelFormat(AV_PIX_FMT_RGBA);  break;
                     default: assert false;
                 }
                 videoToProject.start();
@@ -432,9 +432,9 @@ public class RealityAugmentor {
             if (videoToProject != null) {
                 videoToProject.setImageMode(ImageMode.COLOR);
                 switch (channels) {
-                    case 1: videoToProject.setPixelFormat(PIX_FMT_GRAY8); break;
-                    case 3: videoToProject.setPixelFormat(PIX_FMT_BGR24); break;
-                    case 4: videoToProject.setPixelFormat(PIX_FMT_RGBA);  break;
+                    case 1: videoToProject.setPixelFormat(AV_PIX_FMT_GRAY8); break;
+                    case 3: videoToProject.setPixelFormat(AV_PIX_FMT_BGR24); break;
+                    case 4: videoToProject.setPixelFormat(AV_PIX_FMT_RGBA);  break;
                     default: assert false;
                 }
                 if (imageToProject != null) {
