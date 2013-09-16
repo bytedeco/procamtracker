@@ -115,6 +115,8 @@ import static com.googlecode.javacv.cpp.opencv_highgui.*;
  *   org-openide-nodes.jar
  *   org-openide-util.jar
  *   org-openide-util-lookup.jar
+ *   org-openide-loaders.jar
+ *   org-netbeans-modules-options-keymap.jar
  */
 public class MainFrame extends javax.swing.JFrame implements
         ExplorerManager.Provider, Lookup.Provider, PropertyChangeListener {
