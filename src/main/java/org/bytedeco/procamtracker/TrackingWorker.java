@@ -17,29 +17,8 @@
  * along with ProCamTracker.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.googlecode.javacv.procamtracker;
+package org.bytedeco.procamtracker;
 
-import com.googlecode.javacpp.Pointer;
-import com.googlecode.javacv.BaseChildSettings;
-import com.googlecode.javacv.BufferRing;
-import com.googlecode.javacv.CameraDevice;
-import com.googlecode.javacv.CanvasFrame;
-import com.googlecode.javacv.FFmpegFrameRecorder;
-import com.googlecode.javacv.FrameGrabber;
-import com.googlecode.javacv.FrameGrabber.ImageMode;
-import com.googlecode.javacv.FrameRecorder;
-import com.googlecode.javacv.GLCanvasFrame;
-import com.googlecode.javacv.GNImageAligner;
-import com.googlecode.javacv.GNImageAlignerCL;
-import com.googlecode.javacv.HandMouse;
-import com.googlecode.javacv.JavaCV;
-import com.googlecode.javacv.JavaCVCL;
-import com.googlecode.javacv.MarkerDetector;
-import com.googlecode.javacv.ObjectFinder;
-import com.googlecode.javacv.ProCamTransformer;
-import com.googlecode.javacv.ProCamTransformerCL;
-import com.googlecode.javacv.ProjectorDevice;
-import com.googlecode.javacv.ReflectanceInitializer;
 import com.jogamp.opencl.CLImage2d;
 import com.jogamp.opencl.CLImageFormat;
 import com.jogamp.opencl.CLImageFormat.ChannelType;
@@ -55,10 +34,31 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.media.opengl.GLContext;
 import javax.swing.SwingWorker;
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacv.BaseChildSettings;
+import org.bytedeco.javacv.BufferRing;
+import org.bytedeco.javacv.CameraDevice;
+import org.bytedeco.javacv.CanvasFrame;
+import org.bytedeco.javacv.FFmpegFrameRecorder;
+import org.bytedeco.javacv.FrameGrabber;
+import org.bytedeco.javacv.FrameGrabber.ImageMode;
+import org.bytedeco.javacv.FrameRecorder;
+import org.bytedeco.javacv.GLCanvasFrame;
+import org.bytedeco.javacv.GNImageAligner;
+import org.bytedeco.javacv.GNImageAlignerCL;
+import org.bytedeco.javacv.HandMouse;
+import org.bytedeco.javacv.JavaCV;
+import org.bytedeco.javacv.JavaCVCL;
+import org.bytedeco.javacv.MarkerDetector;
+import org.bytedeco.javacv.ObjectFinder;
+import org.bytedeco.javacv.ProCamTransformer;
+import org.bytedeco.javacv.ProCamTransformerCL;
+import org.bytedeco.javacv.ProjectorDevice;
+import org.bytedeco.javacv.ReflectanceInitializer;
 
-import static com.googlecode.javacv.cpp.avutil.*;
-import static com.googlecode.javacv.cpp.opencv_core.*;
-import static com.googlecode.javacv.cpp.opencv_imgproc.*;
+import static org.bytedeco.javacpp.avutil.*;
+import static org.bytedeco.javacpp.opencv_core.*;
+import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
  *

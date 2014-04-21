@@ -17,7 +17,7 @@
  * along with ProCamTracker.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.googlecode.javacv.procamtracker;
+package org.bytedeco.procamtracker;
 
 import java.awt.Component;
 import java.awt.Dimension;

@@ -17,7 +17,7 @@
  * along with ProCamTracker.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.googlecode.javacv.procamtracker;
+package org.bytedeco.procamtracker;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -28,7 +28,7 @@ import java.awt.RenderingHints;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 
-import com.googlecode.javacv.cpp.opencv_core.IplImage;
+import static org.bytedeco.javacpp.opencv_core.*;
 
 /**
  *

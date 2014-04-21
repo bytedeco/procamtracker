@@ -17,15 +17,15 @@
  * along with ProCamTracker.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.googlecode.javacv.procamtracker;
+package org.bytedeco.procamtracker;
 
-import com.googlecode.javacv.BaseChildSettings;
-import com.googlecode.javacv.CanvasFrame;
-import com.googlecode.javacv.JavaCV;
 import java.awt.Color;
 import java.awt.Point;
+import org.bytedeco.javacv.BaseChildSettings;
+import org.bytedeco.javacv.CanvasFrame;
+import org.bytedeco.javacv.JavaCV;
 
-import static com.googlecode.javacv.cpp.opencv_core.*;
+import static org.bytedeco.javacpp.opencv_core.*;
 
 /**
  *
@@ -380,7 +380,7 @@ public class VirtualBall {
         IplImage image = IplImage.create(640, 960, IPL_DEPTH_8U, 3);
         cvSetZero(image);
         double[] roiPts = { 0,0, 640,0, 640,480, 0,400 };
-        cvFillConvexPoly(image, new CvPoint((byte)16, roiPts), roiPts.length/2, CvScalar.WHITE, CV_AA, 16);
+        cvFillConvexPoly(image, new CvPoint().put((byte)16, roiPts), roiPts.length/2, CvScalar.WHITE, CV_AA, 16);
         VirtualBall virtualBall = new VirtualBall(new Settings(roiPts));
 
         for (int i = 0; i < 1000; i++) {
@@ -396,7 +396,7 @@ public class VirtualBall {
 //if (i > 103) {
 //    System.out.println(i);
 //}
-            cvFillConvexPoly(image, new CvPoint((byte)16, roiPts), roiPts.length/2, CvScalar.WHITE, CV_AA, 16);
+            cvFillConvexPoly(image, new CvPoint().put((byte)16, roiPts), roiPts.length/2, CvScalar.WHITE, CV_AA, 16);
             virtualBall.draw(image, roiPts);
             frame.showImage(image);
         }

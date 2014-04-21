@@ -17,24 +17,8 @@
  * along with ProCamTracker.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.googlecode.javacv.procamtracker;
+package org.bytedeco.procamtracker;
 
-import com.googlecode.javacv.BaseSettings;
-import com.googlecode.javacv.BaseChildSettings;
-import com.googlecode.javacv.CanvasFrame;
-import com.googlecode.javacv.FrameGrabber;
-import com.googlecode.javacv.FrameGrabber.ImageMode;
-import com.googlecode.javacv.FFmpegFrameGrabber;
-import com.googlecode.javacv.JavaCV;
-import com.googlecode.javacv.MarkedPlane;
-import com.googlecode.javacv.Marker;
-import com.googlecode.javacv.MarkerDetector;
-import com.googlecode.javacv.ObjectFinder;
-import com.googlecode.javacv.OpenCVFrameGrabber;
-import com.googlecode.javacv.Parallel;
-import com.googlecode.javacv.ProCamTransformer;
-import com.googlecode.javacv.ProjectiveDevice;
-import com.googlecode.javacv.ProjectiveTransformer;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -64,11 +48,28 @@ import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import org.bytedeco.javacpp.IntPointer;
+import org.bytedeco.javacv.BaseSettings;
+import org.bytedeco.javacv.BaseChildSettings;
+import org.bytedeco.javacv.CanvasFrame;
+import org.bytedeco.javacv.FrameGrabber;
+import org.bytedeco.javacv.FrameGrabber.ImageMode;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.JavaCV;
+import org.bytedeco.javacv.MarkedPlane;
+import org.bytedeco.javacv.Marker;
+import org.bytedeco.javacv.MarkerDetector;
+import org.bytedeco.javacv.ObjectFinder;
+import org.bytedeco.javacv.OpenCVFrameGrabber;
+import org.bytedeco.javacv.Parallel;
+import org.bytedeco.javacv.ProCamTransformer;
+import org.bytedeco.javacv.ProjectiveDevice;
+import org.bytedeco.javacv.ProjectiveTransformer;
 
-import static com.googlecode.javacv.cpp.avutil.*;
-import static com.googlecode.javacv.cpp.opencv_core.*;
-import static com.googlecode.javacv.cpp.opencv_highgui.*;
-import static com.googlecode.javacv.cpp.opencv_imgproc.*;
+import static org.bytedeco.javacpp.avutil.*;
+import static org.bytedeco.javacpp.opencv_core.*;
+import static org.bytedeco.javacpp.opencv_highgui.*;
+import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
  *
@@ -328,6 +329,7 @@ public class RealityAugmentor {
     private CvMat srcPts = CvMat.create(4, 1, CV_64F, 2), dstPts = CvMat.create(4, 1, CV_64F, 2);
     private CvMat tempH  = CvMat.create(3, 3);
     private CvPoint tempPts = new CvPoint(4), corners = new CvPoint(4), corners2 = new CvPoint(corners);
+    private IntPointer tempNPts = new IntPointer(1).put(4);
     private CvRect roi = new CvRect(), maxroi = new CvRect();
     private CvBox2D box = new CvBox2D();
     private CvMat boxPts = CvMat.create(4, 1, CV_32F, 2);
@@ -1066,12 +1068,12 @@ public class RealityAugmentor {
             }
             infoLogString += ")  " + (float)Math.sqrt(markerError/markerErrorCount);
 
-            cvPolyLine(monitorImage, tempPts.position(0), new int[] { 4 }, 1, 1,
+            cvPolyLine(monitorImage, tempPts.position(0), tempNPts, 1, 1,
                     CV_RGB(0, monitorImage.highValue(), 0), 1, CV_AA, 16);
         } else {
             transformer.transform(dstPts.put(roiPts), dstPts, parameters, false);
             tempPts.put((byte)(16-pyramidLevel), dstPts.get());
-            cvPolyLine(monitorImage, tempPts.position(0), new int[] { 4 }, 1, 1,
+            cvPolyLine(monitorImage, tempPts.position(0), tempNPts, 1, 1,
                     CV_RGB(0, monitorImage.highValue(), 0), 1, CV_AA, 16);
         }
 

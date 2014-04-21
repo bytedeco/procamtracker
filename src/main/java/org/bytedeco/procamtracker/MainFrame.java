@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009,2010,2011,2012 Samuel Audet
+ * Copyright (C) 2009,2010,2011,2012,2013,2014 Samuel Audet
  *
  * This file is part of ProCamTracker.
  *
@@ -17,17 +17,8 @@
  * along with ProCamTracker.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.googlecode.javacv.procamtracker;
+package org.bytedeco.procamtracker;
 
-import com.googlecode.javacpp.Pointer;
-import com.googlecode.javacv.CameraDevice;
-import com.googlecode.javacv.FrameGrabber;
-import com.googlecode.javacv.GNImageAligner;
-import com.googlecode.javacv.HandMouse;
-import com.googlecode.javacv.JavaCvErrorCallback;
-import com.googlecode.javacv.MarkerDetector;
-import com.googlecode.javacv.ObjectFinder;
-import com.googlecode.javacv.ProjectorDevice;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Dialog.ModalityType;
@@ -78,6 +69,16 @@ import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkEvent.EventType;
 import javax.swing.event.HyperlinkListener;
 import javax.swing.text.DefaultEditorKit;
+import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacv.CameraDevice;
+import org.bytedeco.javacv.FrameGrabber;
+import org.bytedeco.javacv.GNImageAligner;
+import org.bytedeco.javacv.HandMouse;
+import org.bytedeco.javacv.JavaCvErrorCallback;
+import org.bytedeco.javacv.MarkerDetector;
+import org.bytedeco.javacv.ObjectFinder;
+import org.bytedeco.javacv.ProjectorDevice;
 import org.netbeans.beaninfo.editors.StringArrayEditor;
 import org.netbeans.core.output2.NbIOProvider;
 import org.openide.explorer.ExplorerManager;
@@ -91,8 +92,7 @@ import org.openide.util.Lookup;
 import org.openide.windows.IOContainer;
 import org.openide.windows.InputOutput;
 
-import static com.googlecode.javacv.cpp.opencv_core.*;
-import static com.googlecode.javacv.cpp.opencv_highgui.*;
+import static org.bytedeco.javacpp.opencv_core.*;
 
 
 /**
@@ -190,8 +190,8 @@ public class MainFrame extends javax.swing.JFrame implements
             });
 
             cvRedirectError(new JavaCvErrorCallback() {
-                @Override public int call(int status, String func_name, String err_msg,
-                        String file_name, int line, Pointer userdata) {
+                @Override public int call(int status, BytePointer func_name, BytePointer err_msg,
+                        BytePointer file_name, int line, Pointer userdata) {
                     super.call(status, func_name, err_msg, file_name, line, userdata);
                     if (trackingWorker != null) {
                         trackingWorker.cancel();
@@ -465,7 +465,7 @@ public class MainFrame extends javax.swing.JFrame implements
         toolBar.setFloatable(false);
         toolBar.setRollover(true);
 
-        settingsLoadDefaultsButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/googlecode/javacv/procamtracker/icons/cleanCurrentProject.gif"))); // NOI18N
+        settingsLoadDefaultsButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/bytedeco/procamtracker/icons/cleanCurrentProject.gif"))); // NOI18N
         settingsLoadDefaultsButton.setToolTipText("Load Defaults");
         settingsLoadDefaultsButton.setFocusable(false);
         settingsLoadDefaultsButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
@@ -477,7 +477,7 @@ public class MainFrame extends javax.swing.JFrame implements
         });
         toolBar.add(settingsLoadDefaultsButton);
 
-        settingsLoadButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/googlecode/javacv/procamtracker/icons/openProject.png"))); // NOI18N
+        settingsLoadButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/bytedeco/procamtracker/icons/openProject.png"))); // NOI18N
         settingsLoadButton.setToolTipText("Load Settings");
         settingsLoadButton.setFocusable(false);
         settingsLoadButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
@@ -489,7 +489,7 @@ public class MainFrame extends javax.swing.JFrame implements
         });
         toolBar.add(settingsLoadButton);
 
-        settingsSaveButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/googlecode/javacv/procamtracker/icons/save.png"))); // NOI18N
+        settingsSaveButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/bytedeco/procamtracker/icons/save.png"))); // NOI18N
         settingsSaveButton.setToolTipText("Save Settings");
         settingsSaveButton.setFocusable(false);
         settingsSaveButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
@@ -502,7 +502,7 @@ public class MainFrame extends javax.swing.JFrame implements
         toolBar.add(settingsSaveButton);
         toolBar.add(toolBarSeparator1);
 
-        trackingStartButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/googlecode/javacv/procamtracker/icons/runProject.png"))); // NOI18N
+        trackingStartButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/bytedeco/procamtracker/icons/runProject.png"))); // NOI18N
         trackingStartButton.setToolTipText("Start Tracking");
         trackingStartButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -511,7 +511,7 @@ public class MainFrame extends javax.swing.JFrame implements
         });
         toolBar.add(trackingStartButton);
 
-        trackingStopButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/googlecode/javacv/procamtracker/icons/stop.png"))); // NOI18N
+        trackingStopButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/bytedeco/procamtracker/icons/stop.png"))); // NOI18N
         trackingStopButton.setToolTipText("Stop Tracking");
         trackingStopButton.setEnabled(false);
         trackingStopButton.addActionListener(new java.awt.event.ActionListener() {
@@ -828,7 +828,7 @@ public class MainFrame extends javax.swing.JFrame implements
 
             String text = "";
             BufferedReader r = new BufferedReader(new FileReader(
-                    myDirectory + File.separator + "../README.txt"));
+                    myDirectory + File.separator + "../README.md"));
             String line;
             while ((line = r.readLine()) != null) {
                 text += line + '\n';
@@ -867,7 +867,7 @@ public class MainFrame extends javax.swing.JFrame implements
         textPane.setContentType("text/html");
         textPane.setText(
                 "<font face=sans-serif><strong><font size=+2>ProCamTracker</font></strong> version " + version + "<br>" +
-                "Copyright (C) 2009-2012 Samuel Audet &lt;<a href=\"mailto:saudet@ok.ctrl.titech.ac.jp%28Samuel%20Audet%29\">saudet@ok.ctrl.titech.ac.jp</a>&gt;<br>" +
+                "Copyright (C) 2009-2014 Samuel Audet &lt;<a href=\"mailto:saudet@ok.ctrl.titech.ac.jp%28Samuel%20Audet%29\">saudet@ok.ctrl.titech.ac.jp</a>&gt;<br>" +
                 "Web site: <a href=\"http://www.ok.ctrl.titech.ac.jp/~saudet/procamtracker/\">http://www.ok.ctrl.titech.ac.jp/~saudet/procamtracker/</a><br>" +
                 "<br>" +
                 "Licensed under the GNU General Public License version 2 (GPLv2).<br>" +
@@ -934,6 +934,12 @@ public class MainFrame extends javax.swing.JFrame implements
     * @param args the command line arguments
     */
     public static void main(final String args[]) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            // this is just a workaround for GTK and OpenCV, should be safe to ignore otherwise
+        }
+
         try {
             Threading.disableSingleThreading();
             //System.setProperty("sun.java2d.opengl","false");
