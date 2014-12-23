@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.bytedeco</groupId>
   <artifactId>procamtracker</artifactId>
-  <version>0.9</version>
+  <version>0.10</version>
   <packaging>jar</packaging>
 
   <name>ProCamTracker</name>
@@ -55,6 +55,25 @@
       <groupId>org.bytedeco</groupId>
       <artifactId>javacv</artifactId>
       <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jogamp.gluegen</groupId>
+      <artifactId>gluegen-rt-main</artifactId>
+      <version>2.0.2</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.jogamp.jogl</groupId>
+      <artifactId>jogl-all-main</artifactId>
+      <version>2.0.2</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.jogamp.jocl</groupId>
+      <artifactId>jocl-main</artifactId>
+      <version>2.0.2</version>
+      <optional>true</optional>
     </dependency>
 
     <dependency>

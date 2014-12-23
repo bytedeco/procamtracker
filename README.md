@@ -12,8 +12,8 @@ This method requires a geometrically and color calibrated projector-camera syste
 
 Downloads
 ---------
- * ProCamTracker 0.9 binary archive  [procamtracker-0.9-bin.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/0.9/procamtracker-0.9-bin.zip) (99 MB)
- * ProCamTracker 0.9 source archive  [procamtracker-0.9-src.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/0.9/procamtracker-0.9-src.zip) (66 KB)
+ * ProCamTracker 0.10 binary archive  [procamtracker-0.10-bin.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/0.10/procamtracker-0.10-bin.zip) (104 MB)
+ * ProCamTracker 0.10 source archive  [procamtracker-0.10-src.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/0.10/procamtracker-0.10-src.zip) (66 KB)
 
 The binary archive contains builds for Linux, Mac OS X, and Windows.
 
@@ -38,9 +38,9 @@ And be aware that ProCamTracker runs _a lot_ faster under the "server" JVM than 
 
 Additionally, for IIDC/DCAM cameras, Microsoft's Kinect stereo camera, or the PS3 Eye:
 
- * libdc1394 2.1.x or or 2.2.x  http://sourceforge.net/projects/libdc1394/files/
- * PGR FlyCapture 1.7 or newer (Windows only)  http://www.ptgrey.com/products/pgrflycapture/
- * OpenKinect  http://openkinect.org/
+ * libdc1394 2.1.x or 2.2.x  http://sourceforge.net/projects/libdc1394/files/
+ * FlyCapture 2.7.x  http://www.ptgrey.com/flycapture-sdk
+ * libfreenect 0.5.1  https://github.com/OpenKinect/libfreenect
  * CL Eye Platform SDK  http://codelaboratories.com/downloads/
 
 
@@ -71,9 +71,9 @@ I make all the source code available on my site at http://www.ok.ctrl.titech.ac.
  * A C/C++ compiler
  * JavaCPP https://github.com/bytedeco/javacpp
  * JavaCV  https://github.com/bytedeco/javacv
- * OpenCV 2.4.9  http://sourceforge.net/projects/opencvlibrary/files/
- * FFmpeg 2.3.x  http://ffmpeg.org/download.html
- * ARToolKitPlus 2.3.0  https://launchpad.net/artoolkitplus
+ * OpenCV 2.4.10  http://sourceforge.net/projects/opencvlibrary/files/
+ * FFmpeg 2.5.x  http://ffmpeg.org/download.html
+ * ARToolKitPlus 2.3.x  https://launchpad.net/artoolkitplus
  * NetBeans 8.0  http://netbeans.org/downloads/
  * Maven 2 or 3  http://maven.apache.org/download.html
 
