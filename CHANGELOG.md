@@ -1,4 +1,7 @@
 
+ * Adjust code to support latest changes in JavaCV
+ * Bundle missing dependencies of JOCL and JOGL
+
 ### December 23, 2014 version 0.10
  * Upgrade support to OpenCV 2.4.10, FFmpeg 2.5.x, and FlyCapture 2.7
 

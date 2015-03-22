@@ -27,6 +27,9 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import org.bytedeco.javacv.CanvasFrame;
+import org.bytedeco.javacv.Java2DFrameConverter;
+import org.bytedeco.javacv.OpenCVFrameConverter;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 
@@ -35,13 +38,14 @@ import static org.bytedeco.javacpp.opencv_core.*;
  * @author Samuel Audet
  */
 public class Chronometer {
-    Chronometer(Rectangle roi, int imageType) {
-        this(roi, imageType, -1);
+    Chronometer(Rectangle roi, IplImage image) {
+        this(roi, image, -1);
     }
-    Chronometer(Rectangle roi, int imageType, long startTime) {
+    Chronometer(Rectangle roi, IplImage image, long startTime) {
         this.roi = (Rectangle)roi.clone();
         this.startTime = startTime;
-        this.chronoImage = new BufferedImage(roi.width, roi.height, imageType);
+        this.converter = new OpenCVFrameConverter.ToIplImage();
+        this.chronoImage = new BufferedImage(roi.width, roi.height, Java2DFrameConverter.getBufferedImageType(converter.convert(image)));
         this.chronoGraphics = (Graphics2D)chronoImage.getGraphics();
 
         Font bigFont, smallFont;
@@ -67,6 +71,7 @@ public class Chronometer {
 
     private Rectangle roi;
     private long startTime;
+    private OpenCVFrameConverter converter;
     private BufferedImage chronoImage;
     private Graphics2D chronoGraphics;
     private Font bigFont, smallFont;
@@ -102,6 +107,21 @@ public class Chronometer {
         if (roi.y < 0) {
             roi.y += image.height();
         }
-        image.copyFrom(chronoImage, 1.0, image.nChannels() == 4, roi);
+        Java2DFrameConverter.copy(chronoImage, converter.convert(image), 1.0, image.nChannels() == 4, roi);
+    }
+
+    public static void main(String[] args) throws Exception {
+        CanvasFrame frame = new CanvasFrame("Chronometer Test");
+        OpenCVFrameConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
+        IplImage image = IplImage.create(640, 480, IPL_DEPTH_8U, 3);
+        cvSetZero(image);
+        Chronometer chronometer = new Chronometer(new Rectangle(100, 100, 100, 100), image);
+
+        for (int i = 0; i < 1000; i++) {
+            Thread.sleep(100);
+            cvSetZero(image);
+            chronometer.draw(image);
+            frame.showImage(converter.convert(image));
+        }
     }
 }

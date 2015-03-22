@@ -24,6 +24,7 @@ import java.awt.Point;
 import org.bytedeco.javacv.BaseChildSettings;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.JavaCV;
+import org.bytedeco.javacv.OpenCVFrameConverter;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 
@@ -377,10 +378,11 @@ public class VirtualBall {
 
     public static void main(String[] args) throws Exception {
         CanvasFrame frame = new CanvasFrame("Virtual Ball Test");
+        OpenCVFrameConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
         IplImage image = IplImage.create(640, 960, IPL_DEPTH_8U, 3);
         cvSetZero(image);
         double[] roiPts = { 0,0, 640,0, 640,480, 0,400 };
-        cvFillConvexPoly(image, new CvPoint().put((byte)16, roiPts), roiPts.length/2, CvScalar.WHITE, CV_AA, 16);
+        cvFillConvexPoly(image, new CvPoint(4).put((byte)16, roiPts), roiPts.length/2, CvScalar.WHITE, CV_AA, 16);
         VirtualBall virtualBall = new VirtualBall(new Settings(roiPts));
 
         for (int i = 0; i < 1000; i++) {
@@ -396,9 +398,9 @@ public class VirtualBall {
 //if (i > 103) {
 //    System.out.println(i);
 //}
-            cvFillConvexPoly(image, new CvPoint().put((byte)16, roiPts), roiPts.length/2, CvScalar.WHITE, CV_AA, 16);
+            cvFillConvexPoly(image, new CvPoint(4).put((byte)16, roiPts), roiPts.length/2, CvScalar.WHITE, CV_AA, 16);
             virtualBall.draw(image, roiPts);
-            frame.showImage(image);
+            frame.showImage(converter.convert(image));
         }
     }
 }

@@ -25,6 +25,7 @@ import com.jogamp.opencl.CLImageFormat.ChannelType;
 import com.jogamp.opencl.gl.CLGLImage2d;
 import java.awt.EventQueue;
 import java.io.File;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.concurrent.ExecutorService;
@@ -40,6 +41,7 @@ import org.bytedeco.javacv.BufferRing;
 import org.bytedeco.javacv.CameraDevice;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
+import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber;
 import org.bytedeco.javacv.FrameGrabber.ImageMode;
 import org.bytedeco.javacv.FrameRecorder;
@@ -47,6 +49,7 @@ import org.bytedeco.javacv.GLCanvasFrame;
 import org.bytedeco.javacv.GNImageAligner;
 import org.bytedeco.javacv.GNImageAlignerCL;
 import org.bytedeco.javacv.HandMouse;
+import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.JavaCV;
 import org.bytedeco.javacv.JavaCVCL;
 import org.bytedeco.javacv.MarkerDetector;
@@ -55,6 +58,7 @@ import org.bytedeco.javacv.ProCamTransformer;
 import org.bytedeco.javacv.ProCamTransformerCL;
 import org.bytedeco.javacv.ProjectorDevice;
 import org.bytedeco.javacv.ReflectanceInitializer;
+import org.bytedeco.javacv.OpenCVFrameConverter;
 
 import static org.bytedeco.javacpp.avutil.*;
 import static org.bytedeco.javacpp.opencv_core.*;
@@ -163,6 +167,7 @@ public class TrackingWorker extends SwingWorker {
         "Initial Alignment", "Transformed Object", "Camera Target",
         "Residual Image", "Relative Residual", "HandMouse Image" };
     private CanvasFrame[] monitorWindows = null;
+    OpenCVFrameConverter.ToIplImage[] monitorConverters = null;
 
     JavaCVCL contextCL = null;
 
@@ -170,6 +175,8 @@ public class TrackingWorker extends SwingWorker {
     FrameGrabber frameGrabber = null;
     ProjectorDevice projectorDevice = null;
     CanvasFrame projectorFrame = null;
+    OpenCVFrameConverter.ToIplImage grabberConverter = null;
+    OpenCVFrameConverter.ToIplImage projectorConverter = null;
 
     private double[] roiPts = null;
     private ProCamTransformer transformer;
@@ -187,6 +194,7 @@ public class TrackingWorker extends SwingWorker {
     private CLGLImage2d distortedProjectorImageCL;
     private CvRect roi = new CvRect();
     private FrameRecorder frameRecorder = null;
+    private OpenCVFrameConverter.ToIplImage recorderConverter = null;
 
     class ProjectorBuffer implements BufferRing.ReleasableBuffer {
         public ProjectorBuffer(IplImage template, boolean allocateCL) {
@@ -244,12 +252,15 @@ public class TrackingWorker extends SwingWorker {
             projectorDevice.setSettings(projectorSettings);
         }
         projectorFrame = projectorDevice.createCanvasFrame();
+        projectorConverter = new OpenCVFrameConverter.ToIplImage();
 
         if (trackingSettings.getMonitorWindowsScale() > 0) {
             monitorWindows = new CanvasFrame[monitorWindowsTitles.length];
+            monitorConverters = new OpenCVFrameConverter.ToIplImage[monitorWindowsTitles.length];
             for (int i = 0; i < monitorWindows.length; i++) {
                 monitorWindows[i] = new CanvasFrame(monitorWindowsTitles[i]);
                 monitorWindows[i].setCanvasScale(trackingSettings.getMonitorWindowsScale());
+                monitorConverters[i] = new OpenCVFrameConverter.ToIplImage();
             }
             monitorImages = new IplImage[alignerSettings.getPyramidLevelMax() + 1];
         } else {
@@ -277,15 +288,18 @@ public class TrackingWorker extends SwingWorker {
                 }
             }
 
-            grabbedImage = frameGrabber.getDelayedImage();
+            grabbedImage = grabberConverter.convert(frameGrabber.getDelayedFrame());
             if (grabbedImage == null) {
-                grabbedImage = frameGrabber.grab();
+                grabbedImage = grabberConverter.convert(frameGrabber.grab());
             }
             if (grabbedImage != null) {
                 // gamma "uncorrection", linearization
                 double gamma = frameGrabber.getGamma();
                 if (gamma != 1.0) {
-                    grabbedImage.applyGamma(gamma);
+                    Buffer buffer = grabbedImage.createBuffer();
+                    int depth = OpenCVFrameConverter.getFrameDepth(grabbedImage.depth());
+                    int stride = grabbedImage.widthStep() * 8 / Math.abs(depth);
+                    Java2DFrameConverter.applyGamma(buffer, depth, stride, gamma);
                 }
                 if (trackingSettings.useOpenCL) {
                     if (aligner != null && alignerSettings.getDisplacementMax() > 0) {
@@ -351,7 +365,7 @@ public class TrackingWorker extends SwingWorker {
                         cvSetImageROI(pb.image, maxroi);
                         cvSetImageROI(distortedProjectorImage, maxroi);
                     }
-                    projectorFrame.showImage(distortedProjectorImage);
+                    projectorFrame.showImage(projectorConverter.convert(distortedProjectorImage));
                 }
             }
 
@@ -365,7 +379,7 @@ public class TrackingWorker extends SwingWorker {
                     if (trackingSettings.useOpenCL) {
                         ((GLCanvasFrame)projectorFrame).showImage(distortedProjectorImageCL.getGLObjectID());
                     } else {
-                        projectorFrame.showImage(distortedProjectorImage);
+                        projectorFrame.showImage(projectorConverter.convert(distortedProjectorImage));
                     }
                 }
             }
@@ -410,11 +424,11 @@ public class TrackingWorker extends SwingWorker {
         for (int i = 0; i < projectorInitImages.length; i++) {
             if (projectorFrame != null) {
                 cvResetImageROI(projectorInitImages[i]);
-                projectorFrame.showImage(projectorInitImages[i]);
+                projectorFrame.showImage(projectorConverter.convert(projectorInitImages[i]));
                 projectorFrame.waitLatency();
             }
             frameGrabber.flush();
-            grabbedImage = frameGrabber.grab();
+            grabbedImage = grabberConverter.convert(frameGrabber.grab());
             cvResetImageROI(cameraInitImages[i]);
             if (grabbedImage.nChannels() == 3 && cameraInitImages[i].nChannels() == 4) {
                 cvCvtColor(grabbedImage, cameraInitImages[i], CV_BGR2RGBA);
@@ -429,7 +443,10 @@ public class TrackingWorker extends SwingWorker {
         for (int i = 0; i < cameraInitImages.length; i++) {
             double gamma = frameGrabber.getGamma();
             if (gamma != 1.0) {
-                cameraInitImages[i].applyGamma(gamma);
+                Buffer buffer = cameraInitImages[i].createBuffer();
+                int depth = OpenCVFrameConverter.getFrameDepth(cameraInitImages[i].depth());
+                int stride = cameraInitImages[i].widthStep() * 8 / Math.abs(depth);
+                Java2DFrameConverter.applyGamma(buffer, depth, stride, gamma);
             }
         }
 
@@ -438,7 +455,7 @@ public class TrackingWorker extends SwingWorker {
         IplImage cameraTempInit = cameraDevice.undistort(cameraInitImages[1]);
         if (monitorWindows != null) {
             boolean flipChannels = cameraTempInit.nChannels() == 4;
-            monitorWindows[0].showImage(cameraTempInit, flipChannels);
+            monitorWindows[0].showImage(monitorConverters[0].convert(cameraTempInit), flipChannels);
         }
         roiPts = realityAugmentor.acquireRoi(monitorWindows == null ? null : monitorWindows[0],
                 trackingSettings.getMonitorWindowsScale(), cameraTempInit, 0);
@@ -464,8 +481,9 @@ public class TrackingWorker extends SwingWorker {
 //            CanvasFrame.global.waitKey();
 
             if (frameRecorder != null) {
-                undistortedCameraImage.applyGamma(1/2.2);
-                frameRecorder.record(undistortedCameraImage);
+                Frame frame = recorderConverter.convert(undistortedCameraImage);
+                Java2DFrameConverter.applyGamma(frame, 1/2.2);
+                frameRecorder.record(frame);
             }
         }
 
@@ -549,7 +567,7 @@ public class TrackingWorker extends SwingWorker {
         if (monitorWindows != null) {
             transformer.transform(reflectanceImage, cameraInitFloatImages[0], null, minLevel, parameters, false);
             IplImage monitorImage = getMonitorImage(cameraInitFloatImages[0], null, minLevel);
-            monitorWindows[0].showImage(monitorImage);
+            monitorWindows[0].showImage(monitorConverters[0].convert(monitorImage));
         }
 
         // perform tracking via iterative minimization
@@ -718,7 +736,7 @@ public class TrackingWorker extends SwingWorker {
 
                 IplImage monitorImage = getMonitorImage(transformed, mask, p);
                 monitorWindows[1].setCanvasScale(scale);
-                monitorWindows[1].showImage(monitorImage);
+                monitorWindows[1].showImage(monitorConverters[1].convert(monitorImage));
 
                 monitorImage = getMonitorImage(target, null, p);
                 cameraDevice.setMapsPyramidLevel(0);
@@ -726,26 +744,27 @@ public class TrackingWorker extends SwingWorker {
                 infoLogString += realityAugmentor.drawRoi(monitorImage, p, cameraTempImage, transformer, parameters);
                 cameraDevice.setMapsPyramidLevel(minLevel);
                 monitorWindows[2].setCanvasScale(scale);
-                monitorWindows[2].showImage(monitorImage);
+                monitorWindows[2].showImage(monitorConverters[2].convert(monitorImage));
                 if (frameRecorder != null) {
                     cvResize(monitorImage, undistortedCameraImage, CV_INTER_LINEAR);
-                    undistortedCameraImage.applyGamma(1/2.2);
-                    frameRecorder.record(undistortedCameraImage);
+                    Frame frame = recorderConverter.convert(undistortedCameraImage);
+                    Java2DFrameConverter.applyGamma(frame, 1/2.2);
+                    frameRecorder.record(frame);
                 }
 
                 monitorImage = getMonitorImage(residual, mask, p);
                 monitorWindows[3].setCanvasScale(scale);
-                monitorWindows[3].showImage(monitorImage);
+                monitorWindows[3].showImage(monitorConverters[3].convert(monitorImage));
 
                 IplImage relativeResidual = handMouse.getRelativeResidual();
                 IplImage mouseImage = handMouse.getResultImage();
                 if (relativeResidual != null) {
                     monitorWindows[4].setCanvasScale(scale);
-                    monitorWindows[4].showImage(relativeResidual);
+                    monitorWindows[4].showImage(monitorConverters[4].convert(relativeResidual));
                 }
                 if (mouseImage != null) {
                     monitorWindows[5].setCanvasScale(scale);
-                    monitorWindows[5].showImage(mouseImage);
+                    monitorWindows[5].showImage(monitorConverters[5].convert(mouseImage));
                 }
             }
             logger.info(infoLogString);
@@ -848,7 +867,7 @@ public class TrackingWorker extends SwingWorker {
         if (aligner instanceof GNImageAlignerCL) {
             ((GNImageAlignerCL)aligner).release();
         }
-        frameGrabber.getDelayedImage();
+        frameGrabber.getDelayedFrame();
         return isCancelled() || grabbedImage == null;
     }
 
@@ -865,7 +884,8 @@ public class TrackingWorker extends SwingWorker {
                 frameGrabber.setPixelFormat(AV_PIX_FMT_RGBA);
             }
             frameGrabber.start();
-            IplImage image = frameGrabber.grab();
+            grabberConverter = new OpenCVFrameConverter.ToIplImage();
+            IplImage image = grabberConverter.convert(frameGrabber.grab());
             final IplImage initImage = image;
             final int initWidth    = initImage.width();
             final int initHeight   = initImage.height();
@@ -979,8 +999,10 @@ public class TrackingWorker extends SwingWorker {
                 frameRecorder = new FFmpegFrameRecorder(trackingSettings.outputVideoFile,
                         undistortedCameraImage.width(), undistortedCameraImage.height());
                 frameRecorder.start();
+                recorderConverter = new OpenCVFrameConverter.ToIplImage();
             } else {
                 frameRecorder = null;
+                recorderConverter = null;
             }
 
             boolean done = false;
@@ -1008,6 +1030,7 @@ public class TrackingWorker extends SwingWorker {
             logger.log(Level.SEVERE, "Could not release FrameGrabber.", ex);
         } finally {
             frameGrabber = null;
+            grabberConverter = null;
         }
 
         try {
@@ -1019,6 +1042,7 @@ public class TrackingWorker extends SwingWorker {
             logger.log(Level.SEVERE, "Could not release FrameRecorder.", ex);
         } finally {
             frameRecorder = null;
+            recorderConverter = null;
         }
 
         if (trackingSettings.useOpenCL) {
@@ -1075,6 +1099,7 @@ public class TrackingWorker extends SwingWorker {
         if (projectorFrame != null) {
             projectorFrame.dispose();
             projectorFrame = null;
+            projectorConverter = null;
         }
 
         // force release of native memory

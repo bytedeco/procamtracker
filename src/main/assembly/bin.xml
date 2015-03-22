@@ -35,9 +35,6 @@
       </includes>
       <excludes>
         <exclude>flandmark*.jar</exclude>
-        <exclude>gluegen*.jar</exclude>
-        <exclude>jocl*.jar</exclude>
-        <exclude>jogl*.jar</exclude>
         <exclude>*-sources.jar</exclude>
         <exclude>*-javadoc.jar</exclude>
         <exclude>*-sources.jar</exclude>

@@ -37,6 +37,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.awt.image.SinglePixelPackedSampleModel;
 import java.io.File;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -55,6 +56,7 @@ import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.FrameGrabber;
 import org.bytedeco.javacv.FrameGrabber.ImageMode;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.JavaCV;
 import org.bytedeco.javacv.MarkedPlane;
 import org.bytedeco.javacv.Marker;
@@ -65,6 +67,7 @@ import org.bytedeco.javacv.Parallel;
 import org.bytedeco.javacv.ProCamTransformer;
 import org.bytedeco.javacv.ProjectiveDevice;
 import org.bytedeco.javacv.ProjectiveTransformer;
+import org.bytedeco.javacv.OpenCVFrameConverter;
 
 import static org.bytedeco.javacpp.avutil.*;
 import static org.bytedeco.javacpp.opencv_core.*;
@@ -319,6 +322,7 @@ public class RealityAugmentor {
     private Robot robot = null;
     private BufferedImage handMouseCursor = null;
     private FrameGrabber videoToProject = null;
+    private OpenCVFrameConverter.ToIplImage videoConverter = new OpenCVFrameConverter.ToIplImage();
     private IplImage imageToProject = null, textureImage = null;
     private Chronometer chronometer = null;
     private VirtualBall virtualBall = null;
@@ -392,8 +396,10 @@ public class RealityAugmentor {
             handMouseCursor = ImageIO.read(getClass().getResource("icons/Choose.png"));
         } else if (virtualSettings.projectorVideoFile != null) {
             if (virtualSettings.projectorImageFile != null) {
+                OpenCVFrameConverter.ToIplImage converter1 = new OpenCVFrameConverter.ToIplImage();
+                Java2DFrameConverter converter2 = new Java2DFrameConverter();
                 // loads alpha channel
-                imageToProject = IplImage.createFrom(ImageIO.read(virtualSettings.projectorImageFile), 1.0, true);
+                imageToProject = converter1.convert(converter2.getFrame(ImageIO.read(virtualSettings.projectorImageFile), 1.0, true));
                 if (imageToProject == null) {
                     throw new Exception("Error: Could not load projectorImageFile named \"" +
                             virtualSettings.projectorImageFile + "\".");
@@ -416,9 +422,9 @@ public class RealityAugmentor {
 //                                    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
 //                                    minY = Math.min(minY, y); maxY = Math.max(maxY, y);
 //                                }
-                            case 3: buf.put(pixel + 2, (byte)IplImage.decodeGamma22(buf.get(pixel + 2)));
-                            case 2: buf.put(pixel + 1, (byte)IplImage.decodeGamma22(buf.get(pixel + 1)));
-                            case 1: buf.put(pixel + 0, (byte)IplImage.decodeGamma22(buf.get(pixel + 0)));
+                            case 3: buf.put(pixel + 2, (byte)Java2DFrameConverter.decodeGamma22(buf.get(pixel + 2)));
+                            case 2: buf.put(pixel + 1, (byte)Java2DFrameConverter.decodeGamma22(buf.get(pixel + 1)));
+                            case 1: buf.put(pixel + 0, (byte)Java2DFrameConverter.decodeGamma22(buf.get(pixel + 0)));
                         }
                     }
                 }
@@ -455,7 +461,10 @@ public class RealityAugmentor {
                 throw new Exception("Error: Could not load projectorImageFile named \"" + 
                         virtualSettings.projectorImageFile + "\".");
             }
-            imageToProject.applyGamma(2.2);
+            Buffer buffer = imageToProject.createBuffer();
+            int depth = OpenCVFrameConverter.getFrameDepth(imageToProject.depth());
+            int stride = imageToProject.widthStep() * 8 / Math.abs(depth);
+            Java2DFrameConverter.applyGamma(buffer, depth, stride, 2.2);
         }
     }
 
@@ -664,7 +673,7 @@ public class RealityAugmentor {
                 }
             }
             if (videoToProject != null) {
-                frameImage = videoToProject.grab();
+                frameImage = videoConverter.convert(videoToProject.grab());
 /*
                 final int dstStep = frameImage.widthStep();
                 final int dstChannels = frameImage.nChannels();
@@ -733,20 +742,20 @@ public class RealityAugmentor {
                         int rgb = srcData[srcPixel];
                         switch (dstChannels) {
                             case 1:
-                                int lumi = (IplImage.decodeGamma22((rgb >> 16) & 0xFF) +
-                                            IplImage.decodeGamma22((rgb >>  8) & 0xFF) +
-                                            IplImage.decodeGamma22((rgb      ) & 0xFF)) / 3;
+                                int lumi = (Java2DFrameConverter.decodeGamma22((rgb >> 16) & 0xFF) +
+                                            Java2DFrameConverter.decodeGamma22((rgb >>  8) & 0xFF) +
+                                            Java2DFrameConverter.decodeGamma22((rgb      ) & 0xFF)) / 3;
                                 dstBuf.put(dstPixel, (byte)lumi);
                                 break;
                             case 3: // BGR
-                                dstBuf.put(dstPixel + 0, (byte)IplImage.decodeGamma22((rgb      ) & 0xFF));
-                                dstBuf.put(dstPixel + 1, (byte)IplImage.decodeGamma22((rgb >>  8) & 0xFF));
-                                dstBuf.put(dstPixel + 2, (byte)IplImage.decodeGamma22((rgb >> 16) & 0xFF));
+                                dstBuf.put(dstPixel + 0, (byte)Java2DFrameConverter.decodeGamma22((rgb      ) & 0xFF));
+                                dstBuf.put(dstPixel + 1, (byte)Java2DFrameConverter.decodeGamma22((rgb >>  8) & 0xFF));
+                                dstBuf.put(dstPixel + 2, (byte)Java2DFrameConverter.decodeGamma22((rgb >> 16) & 0xFF));
                                 break;
                             case 4: // RGBA
-                                int rgba = (IplImage.decodeGamma22((rgb >> 16) & 0xFF)      ) |
-                                           (IplImage.decodeGamma22((rgb >>  8) & 0xFF) <<  8) |
-                                           (IplImage.decodeGamma22((rgb      ) & 0xFF) << 16) | (0xFF << 24);
+                                int rgba = (Java2DFrameConverter.decodeGamma22((rgb >> 16) & 0xFF)      ) |
+                                           (Java2DFrameConverter.decodeGamma22((rgb >>  8) & 0xFF) <<  8) |
+                                           (Java2DFrameConverter.decodeGamma22((rgb      ) & 0xFF) << 16) | (0xFF << 24);
                                 dstBufInt.put(dstPixel/4, rgba);
                                 break;
                             default: assert false;
@@ -755,10 +764,10 @@ public class RealityAugmentor {
                 }}});
             }
         } else if (videoToProject != null) {
-            frameImage = videoToProject.grab();
+            frameImage = videoConverter.convert(videoToProject.grab());
             if (frameImage == null) {
                 videoToProject.restart();
-                frameImage = videoToProject.grab();
+                frameImage = videoConverter.convert(videoToProject.grab());
             }
             if (imageToProject == null) {
 //                frameImage.applyGamma(2.2);
@@ -813,18 +822,18 @@ public class RealityAugmentor {
                         switch (dstChannels) {
                             case 1:
                                 int lumi = (r + g + b)/3;
-                                dstBuf.put(dstPixel,  (byte)((lumi*a + IplImage.decodeGamma22(dstBuf.get(dstPixel    ))*(255-a))/255));
+                                dstBuf.put(dstPixel,  (byte)((lumi*a + Java2DFrameConverter.decodeGamma22(dstBuf.get(dstPixel    ))*(255-a))/255));
                                 break;
                             case 3: // BGR
-                                dstBuf.put(dstPixel,     (byte)((b*a + IplImage.decodeGamma22(dstBuf.get(dstPixel    ))*(255-a))/255));
-                                dstBuf.put(dstPixel + 1, (byte)((g*a + IplImage.decodeGamma22(dstBuf.get(dstPixel + 1))*(255-a))/255));
-                                dstBuf.put(dstPixel + 2, (byte)((r*a + IplImage.decodeGamma22(dstBuf.get(dstPixel + 2))*(255-a))/255));
+                                dstBuf.put(dstPixel,     (byte)((b*a + Java2DFrameConverter.decodeGamma22(dstBuf.get(dstPixel    ))*(255-a))/255));
+                                dstBuf.put(dstPixel + 1, (byte)((g*a + Java2DFrameConverter.decodeGamma22(dstBuf.get(dstPixel + 1))*(255-a))/255));
+                                dstBuf.put(dstPixel + 2, (byte)((r*a + Java2DFrameConverter.decodeGamma22(dstBuf.get(dstPixel + 2))*(255-a))/255));
                                 break;
                             case 4: // RGBA
                                 int rgba = dstBufInt.get(dstPixel/4);
-                                r = (r*a + IplImage.decodeGamma22((rgba      ) & 0xFF)*(255-a))/255;
-                                g = (g*a + IplImage.decodeGamma22((rgba >>  8) & 0xFF)*(255-a))/255;
-                                b = (b*a + IplImage.decodeGamma22((rgba >> 16) & 0xFF)*(255-a))/255;
+                                r = (r*a + Java2DFrameConverter.decodeGamma22((rgba      ) & 0xFF)*(255-a))/255;
+                                g = (g*a + Java2DFrameConverter.decodeGamma22((rgba >>  8) & 0xFF)*(255-a))/255;
+                                b = (b*a + Java2DFrameConverter.decodeGamma22((rgba >> 16) & 0xFF)*(255-a))/255;
                                 a = 0xFF/*(a+(a2 = dstBuf.get(dstPixel + 3)&0xFF))*/;
                                 rgba = r | (g  << 8) | (b << 16) | (a << 24);
                                 dstBufInt.put(dstPixel/4, rgba);
@@ -840,7 +849,7 @@ public class RealityAugmentor {
         if (r == null || r.width <= 0 || r.height <= 0) {
             chronometer = null;
         } else if (chronometer == null) {
-            chronometer = new Chronometer(r, frameImage.getBufferedImageType());
+            chronometer = new Chronometer(r, frameImage);
         }
         if (chronometer != null) {
             chronometer.draw(frameImage);
