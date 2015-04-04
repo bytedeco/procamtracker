@@ -1,5 +1,7 @@
 
+### April 4, 2014 version 0.11
  * Adjust code to support latest changes in JavaCV
+ * Upgrade support to OpenCV 2.4.11 and FFmpeg 2.6.x
  * Bundle missing dependencies of JOCL and JOGL
 
 ### December 23, 2014 version 0.10

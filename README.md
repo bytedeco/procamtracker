@@ -12,8 +12,8 @@ This method requires a geometrically and color calibrated projector-camera syste
 
 Downloads
 ---------
- * ProCamTracker 0.10 binary archive  [procamtracker-0.10-bin.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/0.10/procamtracker-0.10-bin.zip) (104 MB)
- * ProCamTracker 0.10 source archive  [procamtracker-0.10-src.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/0.10/procamtracker-0.10-src.zip) (66 KB)
+ * ProCamTracker 0.11 binary archive  [procamtracker-0.11-bin.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/0.11/procamtracker-0.11-bin.zip) (114 MB)
+ * ProCamTracker 0.11 source archive  [procamtracker-0.11-src.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/0.11/procamtracker-0.11-src.zip) (67 KB)
 
 The binary archive contains builds for Linux, Mac OS X, and Windows.
 
@@ -69,10 +69,10 @@ Source Code
 I make all the source code available on GitHub at https://github.com/bytedeco/procamtracker . You will also need the following to modify and build the application:
 
  * A C/C++ compiler
- * JavaCPP 0.10 https://github.com/bytedeco/javacpp
- * JavaCV  0.10 https://github.com/bytedeco/javacv
- * OpenCV 2.4.10  http://sourceforge.net/projects/opencvlibrary/files/
- * FFmpeg 2.5.x  http://ffmpeg.org/download.html
+ * JavaCPP 0.11 https://github.com/bytedeco/javacpp
+ * JavaCV  0.11 https://github.com/bytedeco/javacv
+ * OpenCV 2.4.11  http://sourceforge.net/projects/opencvlibrary/files/
+ * FFmpeg 2.6.x  http://ffmpeg.org/download.html
  * ARToolKitPlus 2.3.x  https://launchpad.net/artoolkitplus
  * NetBeans 8.0  http://netbeans.org/downloads/
  * Maven 2 or 3  http://maven.apache.org/download.html
