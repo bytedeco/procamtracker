@@ -27,6 +27,7 @@ import org.bytedeco.javacv.JavaCV;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 
 import static org.bytedeco.javacpp.opencv_core.*;
+import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
  *
