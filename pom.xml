@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.bytedeco</groupId>
   <artifactId>procamtracker</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <packaging>jar</packaging>
 
   <name>ProCamTracker</name>
@@ -27,9 +27,9 @@
   </developers>
 
   <scm>
-    <url>https://github.com/bytedeco/javacv</url>
-    <connection>scm:git:git://github.com/bytedeco/javacv.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/bytedeco/javacv.git</developerConnection>
+    <url>https://github.com/bytedeco/procamtracker</url>
+    <connection>scm:git:git://github.com/bytedeco/procamtracker.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/bytedeco/procamtracker.git</developerConnection>
   </scm>
 
   <distributionManagement>
