@@ -19,6 +19,8 @@
 
 package org.bytedeco.procamtracker;
 
+import com.jogamp.opengl.GLProfile;
+import com.jogamp.opengl.Threading;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Dialog.ModalityType;
@@ -49,8 +51,6 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
-import javax.media.opengl.GLProfile;
-import javax.media.opengl.Threading;
 import javax.swing.Action;
 import javax.swing.ActionMap;
 import javax.swing.InputMap;
