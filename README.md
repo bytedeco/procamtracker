@@ -12,23 +12,22 @@ This method requires a geometrically and color calibrated projector-camera syste
 
 Downloads
 ---------
- * ProCamTracker 1.0 binary archive  [procamtracker-1.0-bin.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/1.0/procamtracker-1.0-bin.zip) (106 MB)
- * ProCamTracker 1.0 source archive  [procamtracker-1.0-src.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/1.0/procamtracker-1.0-src.zip) (67 KB)
+ * ProCamTracker 1.1 binary archive  [procamtracker-1.1-bin.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/1.1/procamtracker-1.1-bin.zip) (109 MB)
+ * ProCamTracker 1.1 source archive  [procamtracker-1.1-src.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/1.1/procamtracker-1.1-src.zip) (67 KB)
 
 The binary archive contains builds for Linux, Mac OS X, and Windows.
 
 
 Required Software
 -----------------
-I wrote ProCamTracker itself in Java and its binary should run on any platform where an implementation of Java SE 6 or newer exists. The binary distribution also contains natively compiled code for Linux, Mac OS X, and Windows, needed by JavaCV.
+I wrote ProCamTracker itself in Java and its binary should run on any platform where an implementation of Java SE 7 or newer exists. The binary distribution also contains natively compiled code for Linux, Mac OS X, and Windows, needed by JavaCV.
 
 Please install the following before running ProCamTracker:
 
- * An implementation of Java SE 6 or newer
+ * An implementation of Java SE 7 or newer:
    * OpenJDK  http://openjdk.java.net/install/  or
    * Sun JDK  http://www.oracle.com/technetwork/java/javase/downloads/  or
-   * IBM JDK  http://www.ibm.com/developerworks/java/jdk/  or
-   * Java SE for Mac OS X  http://developer.apple.com/java/  etc.
+   * IBM JDK  http://www.ibm.com/developerworks/java/jdk/
 
 As well as the following to enable processing with OpenCL and OpenGL:
 
@@ -39,7 +38,7 @@ And be aware that ProCamTracker runs _a lot_ faster under the "server" JVM than 
 Additionally, for IIDC/DCAM cameras, Microsoft's Kinect stereo camera, or the PS3 Eye:
 
  * libdc1394 2.1.x or 2.2.x  http://sourceforge.net/projects/libdc1394/files/
- * FlyCapture 2.7.x  http://www.ptgrey.com/flycapture-sdk
+ * FlyCapture 2.7.x or 2.8.x  http://www.ptgrey.com/flycapture-sdk
  * libfreenect 0.5.x  https://github.com/OpenKinect/libfreenect
  * CL Eye Platform SDK  http://codelaboratories.com/downloads/
 
@@ -69,13 +68,13 @@ Source Code
 I make all the source code available on GitHub at https://github.com/bytedeco/procamtracker . You will also need the following to modify and build the application:
 
  * A C/C++ compiler
- * JavaCPP 1.0  https://github.com/bytedeco/javacpp
- * JavaCV  1.0  https://github.com/bytedeco/javacv
+ * JavaCPP 1.1  https://github.com/bytedeco/javacpp
+ * JavaCV  1.1  https://github.com/bytedeco/javacv
  * OpenCV 3.0.0  http://sourceforge.net/projects/opencvlibrary/files/
- * FFmpeg 2.7.x  http://ffmpeg.org/download.html
+ * FFmpeg 2.8.x  http://ffmpeg.org/download.html
  * ARToolKitPlus 2.3.x  https://launchpad.net/artoolkitplus
  * NetBeans 8.0  http://netbeans.org/downloads/
- * Maven 2 or 3  http://maven.apache.org/download.html
+ * Maven 3.x  http://maven.apache.org/download.html
 
 (The icons were shamelessly copied from the source code repository of NetBeans. Also licensed under the GPLv2.)
 
