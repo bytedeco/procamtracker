@@ -5,9 +5,9 @@ Introduction
 ------------
 ProCamTracker is a user-friendly computer application to turn a perfectly normal pair of color camera and projector into a system that can track without markers a real world object (currently limited to matte planes), while simultaneously projecting on its surface geometrically corrected video images using the direct image alignment algorithm included in [JavaCV](https://github.com/bytedeco/javacv), an open source library I developed as part of my doctoral research. More information about the algorithm itself can be found in the related CVPR 2010 paper below, which you may cite if you find this software useful. Thank you.
 
-Samuel Audet, Masatoshi Okutomi, and Masayuki Tanaka. Direct Image Alignment of Projector-Camera Systems with Planar Surfaces. The 23rd IEEE Conference on Computer Vision and Pattern Recognition (CVPR 2010). IEEE Computer Society, June 2010. http://www.ok.ctrl.titech.ac.jp/~saudet/publications/cvpr2010.pdf
+[Samuel Audet, Masatoshi Okutomi, and Masayuki Tanaka. Direct Image Alignment of Projector-Camera Systems with Planar Surfaces. The 23rd IEEE Conference on Computer Vision and Pattern Recognition (CVPR 2010). IEEE Computer Society, June 2010.](http://www.ok.ctrl.titech.ac.jp/res/PCS/publications/cvpr2010.pdf)
 
-This method requires a geometrically and color calibrated projector-camera system. To perform the calibration, I recommend [ProCamCalib](http://www.ok.ctrl.titech.ac.jp/~saudet/procamcalib/), a tool I previously released for that purpose.
+This method requires a geometrically and color calibrated projector-camera system. To perform the calibration, I recommend [ProCamCalib](https://github.com/bytedeco/procamcalib), a tool I previously released for that purpose.
 
 
 Downloads
@@ -82,8 +82,6 @@ Please keep me informed of any updates or fixes you make to the code so that I m
 
 
 ----
-Copyright (C) 2009-2015 Samuel Audet [saudet `at` ok.ctrl.titech.ac.jp](mailto:saudet at ok.ctrl.titech.ac.jp)  
-Web site: http://www.ok.ctrl.titech.ac.jp/~saudet/procamtracker/
-
-Licensed under the GNU General Public License version 2 (GPLv2).  
-Please refer to LICENSE.txt or http://www.gnu.org/licenses/ for details.
+Project lead: Samuel Audet [samuel.audet `at` gmail.com](mailto:samuel.audet at gmail.com)  
+Developer site: https://github.com/bytedeco/procamtracker  
+Discussion group: http://groups.google.com/group/javacv
