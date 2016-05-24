@@ -329,7 +329,6 @@ public class RealityAugmentor {
 
     private ProjectiveTransformer composeWarper = new ProjectiveTransformer();
     private ProjectiveTransformer.Parameters[] composeParameters = { composeWarper.createParameters() };
-    //private ProjectiveTransformer.Data[] composeData = { new ProjectiveTransformer.Data() };
     private CvMat srcPts = CvMat.create(4, 1, CV_64F, 2), dstPts = CvMat.create(4, 1, CV_64F, 2);
     private CvMat tempH  = CvMat.create(3, 3);
     private CvPoint tempPts = new CvPoint(4), corners = new CvPoint(4), corners2 = new CvPoint(corners);
@@ -404,33 +403,23 @@ public class RealityAugmentor {
                     throw new Exception("Error: Could not load projectorImageFile named \"" +
                             virtualSettings.projectorImageFile + "\".");
                 }
-//                imageToProject.applyGamma(2.2);
                 final ByteBuffer buf = imageToProject.getByteBuffer();
                 final int width = imageToProject.width();
                 final int height = imageToProject.height();
                 final int step = imageToProject.widthStep();
                 final int channels = imageToProject.nChannels();
-//                int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE,
-//                    minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
                 for (int y = 0; y < height; y++) {
                     int pixel = y*step;
                     for (int x = 0; x < width; x++, pixel += channels) {
                         switch (channels) {
                             default: assert false;
                             case 4: // RGBA
-//                                if (buf.get(pixel + 3) != 0) {
-//                                    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
-//                                    minY = Math.min(minY, y); maxY = Math.max(maxY, y);
-//                                }
                             case 3: buf.put(pixel + 2, (byte)Java2DFrameConverter.decodeGamma22(buf.get(pixel + 2)));
                             case 2: buf.put(pixel + 1, (byte)Java2DFrameConverter.decodeGamma22(buf.get(pixel + 1)));
                             case 1: buf.put(pixel + 0, (byte)Java2DFrameConverter.decodeGamma22(buf.get(pixel + 0)));
                         }
                     }
                 }
-//                if (maxX > minX && maxY > minY) {
-//                    cvSetImageROI(imageToProject, cvRect(minX, minY, maxX-minX, maxY-minY));
-//                }
             }
             try {
                 videoToProject = new FFmpegFrameGrabber(virtualSettings.projectorVideoFile);
@@ -567,17 +556,6 @@ public class RealityAugmentor {
         synchronized (roiPts) {
             roiPts.wait();
         }
-
-//        if (monitorWindows != null) {
-//            for (int i = 0; i < monitorWindows.length; i++) {
-//                if (monitorWindows[i] != null) {
-//                    monitorWindows[i].dispose();
-//                    monitorWindows[i] = null;
-//                }
-//            }
-//            monitorWindows = null;
-//        }
-
         return roiPts;
     }
 
@@ -623,8 +601,6 @@ public class RealityAugmentor {
         }
         logger.info(infoLogString);
         if (markersin == null || markersin.length == 0) {
-//            throw new Exception("Error: MarkerDetector detected no markers in \"" +
-//                    settings.textureImageFile + "\".");
             return null;
         }
         MarkedPlane markedPlane = new MarkedPlane(textureImage.width(), textureImage.height(), markersin, 1);
@@ -633,7 +609,6 @@ public class RealityAugmentor {
         infoLogString = "initial marker centers = ";
         if (markersout == null || markersout.length == 0 ||
                 markedPlane.getTotalWarp(markersout, tempH, true) == Double.POSITIVE_INFINITY) {
-//            throw new Exception("Error: MarkerDetector failed to match markers in the grabbed image.");
             return null;
         }
         dstPts.put(0.0, 0.0,  textureImage.width(), 0.0,
@@ -664,53 +639,14 @@ public class RealityAugmentor {
             final int desktopMouseX = objectMouseX*w/(textureImage != null ? textureImage.width()  : projector.imageWidth);
             final int desktopMouseY = objectMouseY*h/(textureImage != null ? textureImage.height() : projector.imageHeight);
             if (desktopMouseX >= 0 && desktopMouseY >= 0) {
-//                System.out.println("C  " + desktopMouseX + " " + desktopMouseY);
                 robot.mouseMove(desktopMouseX, desktopMouseY);
                 if (mouseClick) {
-//                    System.out.println("click!!");
                     robot.mousePress  (InputEvent.BUTTON1_MASK); robot.waitForIdle();
                     robot.mouseRelease(InputEvent.BUTTON1_MASK); robot.waitForIdle();
                 }
             }
             if (videoToProject != null) {
                 frameImage = videoConverter.convert(videoToProject.grab());
-/*
-                final int dstStep = frameImage.widthStep();
-                final int dstChannels = frameImage.nChannels();
-                final ByteBuffer dstBuf = frameImage.getByteBuffer();
-                final IntBuffer dstBufInt = dstChannels == 4 ? dstBuf.order(ByteOrder.LITTLE_ENDIAN).asIntBuffer() : null;
-                final int dstWidth = frameImage.width();
-                final int dstHeight = frameImage.height();
-
-    //            for (int y = 0; y < dstHeight; y++) {
-                Parallel.loop(0, dstHeight, new Parallel.Looper() {
-                public void loop(int from, int to, int looperID) {
-                for (int y = from; y < to; y++) {
-                    int dstPixel = y*dstStep;
-                    for (int x = 0; x < dstWidth; x++, dstPixel += dstChannels) {
-                        switch (dstChannels) {
-                            case 1:
-                                dstBuf.put(dstPixel,     (byte)(IplImage.decodeGamma22(dstBuf.get(dstPixel    ))));
-                                break;
-                            case 3: // BGR
-                                dstBuf.put(dstPixel,     (byte)(IplImage.decodeGamma22(dstBuf.get(dstPixel    ))));
-                                dstBuf.put(dstPixel + 1, (byte)(IplImage.decodeGamma22(dstBuf.get(dstPixel + 1))));
-                                dstBuf.put(dstPixel + 2, (byte)(IplImage.decodeGamma22(dstBuf.get(dstPixel + 2))));
-                                break;
-                            case 4: // RGBA
-                                int rgba = dstBufInt.get(dstPixel/4);
-                                int r = IplImage.decodeGamma22((rgba      ) & 0xFF);
-                                int g = IplImage.decodeGamma22((rgba >>  8) & 0xFF);
-                                int b = IplImage.decodeGamma22((rgba >> 16) & 0xFF);
-                                int a = 0xFF;
-                                rgba = r | (g  << 8) | (b << 16) | (a << 24);
-                                dstBufInt.put(dstPixel/4, rgba);
-                                break;
-                            default: assert false;
-                        }
-                    }
-                }}});
- */
             } else {
                 final int dstStep = imageToProject.widthStep();
                 final int dstChannels = imageToProject.nChannels();
@@ -720,19 +656,13 @@ public class RealityAugmentor {
                 final int dstHeight = imageToProject.height();
 
                 BufferedImage screenCapture = robot.createScreenCapture(new Rectangle(dstWidth, dstHeight));
-    //            PointerInfo pi = MouseInfo.getPointerInfo();
                 if (desktopMouseX >= 0 && desktopMouseY >= 0) {
                     Graphics2D g = screenCapture.createGraphics();
-    //                Point p = desktopScreen.getDefaultConfiguration().getBounds().getLocation();
-    //                Point l = pi.getLocation();
-    //                int x = l.x - p.x;
-    //                int y = l.y - p.y;
                     g.drawImage(handMouseCursor, desktopMouseX, desktopMouseY, null);
                 }
                 final int srcStep = ((SinglePixelPackedSampleModel)screenCapture.getSampleModel()).getScanlineStride();
                 final int[] srcData = ((DataBufferInt)screenCapture.getRaster().getDataBuffer()).getData();
 
-    //            for (int y = 0; y < dstHeight; y++) {
                 Parallel.loop(0, dstHeight, new Parallel.Looper() {
                 public void loop(int from, int to, int looperID) {
                 for (int y = from; y < to; y++) {
@@ -792,7 +722,6 @@ public class RealityAugmentor {
                 final int width  = w;
                 final int height = h;
 
-//                for (int y = 0; y < height; y++) {
                 Parallel.loop(0, height, new Parallel.Looper() {
                 public void loop(int from, int to, int looperID) {
                 for (int y = from; y < to; y++) {
@@ -874,7 +803,6 @@ public class RealityAugmentor {
     public void update(final IplImage projectorImage, final CvRect prevroi,
             final double imageMouseX, final double imageMouseY, final boolean mouseClick,
             final ProCamTransformer.Parameters parameters) throws Exception {
-//            System.out.println("A  " + imageMouseX + " " + imageMouseY);
         future = executor.submit(new Callable<CvRect>() { public CvRect call() throws Exception {
             int objectMouseX = -1, objectMouseY = -1;
             if (imageMouseX >= 0 && imageMouseY >= 0 && textureImage != null) {
@@ -885,7 +813,6 @@ public class RealityAugmentor {
                 composeWarper.transform(dstPts.put(imageMouseX, imageMouseY), dstPts, composeParameters[0], true);
                 objectMouseX = (int)Math.round(dstPts.get(0));
                 objectMouseY = (int)Math.round(dstPts.get(1));
-    //            System.out.println("B  " + objectMouseX + " " + objectMouseY);
             }
             if (mouseClick) {
                 for (VirtualSettings vs : objectSettings.toArray()) {
@@ -938,7 +865,6 @@ public class RealityAugmentor {
                 }
                 cvInvert(tempH, tempH);
                 cvPerspectiveTransform(dstPts, dstPts, tempH);
-//System.out.println(dstPts);
                 JavaCV.getPerspectiveTransform(projPts, dstPts.get(), tempH);
                 composeParameters[0].set(tempH, false);
 
@@ -947,7 +873,6 @@ public class RealityAugmentor {
                     composeWarper.transform(dstPts.put(imageMouseX, imageMouseY), dstPts, composeParameters[0], true);
                     objectMouseX = (int)Math.round(dstPts.get(0));
                     objectMouseY = (int)Math.round(dstPts.get(1));
-        //            System.out.println("C  " + objectMouseX + " " + objectMouseY);
                 }
             }
 
@@ -969,18 +894,14 @@ public class RealityAugmentor {
                 }
                 composeWarper.transform(dstPts.put(framePts), dstPts, composeParameters[0], false);
                 composeWarper.setFillColor(CvScalar.WHITE);
-                //composeData[0].srcImg   = frameImage;
-                //composeData[0].transImg = projectorImage;
                 if (prevroi == null) {
                     composeWarper.transform(frameImage, projectorImage, null, 0, composeParameters[0], false);
-                    //composeWarper.transform(composeData, null, composeParameters, null);
                 } else {
                     roi.x(0).y(0).width(projectorImage.width()).height(projectorImage.height());
                     // Add +3 all around because cvWarpPerspective() needs it for interpolation,
                     // and there seems to be something funny with memory alignment and
                     // ROIs, so let's align our ROI to a 16 byte boundary just in case..
                     JavaCV.boundingRect(dstPts.get(), roi, 3, 3, 16, 1);
-                    //System.out.println(roi);
 
                     maxroi.x     (Math.min(prevroi.x(), roi.x()));
                     maxroi.y     (Math.min(prevroi.y(), roi.y()));
@@ -988,11 +909,10 @@ public class RealityAugmentor {
                     maxroi.height(Math.max(prevroi.y()+prevroi.height(), roi.y()+roi.height()) - maxroi.y());
 
                     composeWarper.transform(frameImage, projectorImage, maxroi, 0, composeParameters[0], false);
-                    //composeWarper.transform(composeData, maxroi, composeParameters, null);
 
                     prevroi.x(roi.x()).y(roi.y()).width(roi.width()).height(roi.height());
                 }
-            } else { // Settings.ProjectionType.FIXED
+            } else {
                 dstPts.put(0.0, 0.0,  pw, 0.0,  pw, ph,  0.0, ph);
                 if (frameImage.width() == pw && frameImage.height() == ph) {
                     cvCopy(frameImage, projectorImage);

@@ -743,7 +743,6 @@ public class MainFrame extends javax.swing.JFrame implements
             super.done();
 
             settingsMenu.setEnabled(true);
-//            trackingMenu.setEnabled(true);
             trackingStartMenuItem.setEnabled(true);
             trackingStopMenuItem.setEnabled(false);
             settingsLoadDefaultsButton.setEnabled(true);
@@ -770,7 +769,6 @@ public class MainFrame extends javax.swing.JFrame implements
             trackingWorker.addPropertyChangeListener(this);
 
             settingsMenu.setEnabled(false);
-//            trackingMenu.setEnabled(false);
             trackingStartMenuItem.setEnabled(false);
             trackingStopMenuItem.setEnabled(true);
             settingsLoadDefaultsButton.setEnabled(false);
@@ -800,7 +798,6 @@ public class MainFrame extends javax.swing.JFrame implements
                 trackingWorker.init();
                 trackingWorker.execute();
 
-                //statusLabel.setText("Tracking...");
             } catch (Exception ex) {
                 Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE,
                         "Could not initialize tracking worker thread.", ex);
@@ -942,7 +939,6 @@ public class MainFrame extends javax.swing.JFrame implements
 
         try {
             Threading.disableSingleThreading();
-            //System.setProperty("sun.java2d.opengl","false");
             GLProfile.initSingleton();
         } catch (Throwable t) { }
 

@@ -58,9 +58,6 @@ public class VirtualBall {
         CvScalar colorBGR = cvScalar(0, 0, 255, 0); // red
         CvScalar colorRGB = cvScalar(255, 0, 0, 0); // red
 
-//        public double[] getInitialRoiPts() {
-//            return initialRoiPts;
-//        }
         public void setInitialRoiPts(double[] initialRoiPts) {
             this.initialRoiPts = initialRoiPts.clone();
             initialPosition[0] = initialPosition[1] = 0;
@@ -72,9 +69,6 @@ public class VirtualBall {
             initialPosition[1] /= initialRoiPts.length/2;
         }
 
-//        public double[] getInitialPosition() {
-//            return initialPosition;
-//        }
         public void setInitialPosition(double[] initialPosition) {
             this.initialPosition = initialPosition;
         }
@@ -162,12 +156,6 @@ public class VirtualBall {
         double d  = ((y4 - y3)*(x2 - x1) - (x4 - x3)*(y2 - y1));
         double ua = ((x4 - x3)*(y1 - y3) - (y4 - y3)*(x1 - x3)) / d;
         ua = ua < 0 ? 0 : ua > 1 ? 1 : ua;
-//        if (Double.isNaN(ua) || Double.isInfinite(ua)) {
-//            System.out.println("oops");
-//        }
-//        double ub = ((x2 - x1)*(y1 - y3) - (y2 - y1)*(x1 - x3)) / d;
-//        ub = ub < 0 ? 0 : ub > 1 ? 1 : ub;
-//        System.out.println(ua + " " + ub);
         return new double[] { x1 + ua*(x2- x1),  y1 + ua*(y2- y1) };
     }
 
@@ -197,7 +185,6 @@ public class VirtualBall {
         if ((x3-cx1)*(cx1p-cx1) + (y3-cy1)*(cy1p-cy1) > 0) {
             boostx = cx1p - cx1;
             boosty = cy1p - cy1;
-            //double boost = Math.sqrt(boostx*boostx + boosty*boosty);
         }
         return new double[] { boostx, boosty };
     }
@@ -251,10 +238,8 @@ public class VirtualBall {
                 timeLeft = 0;
                 velocity[0] = 0;
                 velocity[1] = 0;
-                //System.out.println("bad rolling = " + problem + " " + timeLeft);
             }
 
-    //System.out.println(velocity[0]);
             return true;
         }
 
@@ -284,8 +269,6 @@ public class VirtualBall {
             position[1] = p[1];
             double timeTaken = Math.sqrt(dx*dx + dy*dy)/Math.sqrt(vx*vx + vy*vy);
             double vn = velocity[0]*n[0] + velocity[1]*n[1];
-//System.out.println(timeTaken);
-//System.out.println(vn);
             if (timeTaken > 0.0 && vn < 0) {
                 if (Math.sqrt(velocity[0]*velocity[0] + velocity[1]*velocity[1]) < 1.0) {
                     timeLeft = 0;
@@ -333,7 +316,6 @@ public class VirtualBall {
             double x3 = roiPts[ i%l   ], y3 = roiPts[(i+1)%l],
                    x4 = roiPts[(i+2)%l], y4 = roiPts[(i+3)%l];
             if (rollOffMovingLine(x1, y1, x2, y2, x3, y3, x4, y4)) {
-//                System.out.println("rolled off " + i/2);
                 rolledOff = true;
                 break;
             }
@@ -354,12 +336,10 @@ public class VirtualBall {
                 double x3 = roiPts[ i%l   ], y3 = roiPts[(i+1)%l],
                        x4 = roiPts[(i+2)%l], y4 = roiPts[(i+3)%l];
                 if (bounceOffMovingLine(x1, y1, x2, y2, x3, y3, x4, y4)) {
-    //                System.out.println("bounced off " + i/2);
                     bouncing = true;
                 }
             }
         }
-//System.out.println(timeLeft + " " + velocity[0] + " " + velocity[1]);
 
         if (timeLeft > 0) {
             position[0] += velocity[0]*timeLeft;
@@ -369,7 +349,6 @@ public class VirtualBall {
         IplROI roi = image.roi();
         center.x((int)Math.round((position[0] - (roi != null ? roi.xOffset() : 0))*(1<<16)));
         center.y((int)Math.round((position[1] - (roi != null ? roi.yOffset() : 0))*(1<<16)));
-//System.out.println("drawn at " + position[0] + " " + position[1]);
         cvCircle(image, center, (int)Math.round(settings.radius*(1<<16)),
                 image.nChannels() == 4 ? settings.colorRGB : settings.colorBGR,
                 CV_FILLED, CV_AA, 16);
@@ -396,9 +375,6 @@ public class VirtualBall {
                 roiPts[3] += 1;
                 roiPts[5] += 1;
             }
-//if (i > 103) {
-//    System.out.println(i);
-//}
             cvFillConvexPoly(image, new CvPoint(4).put((byte)16, roiPts), roiPts.length/2, CvScalar.WHITE, CV_AA, 16);
             virtualBall.draw(image, roiPts);
             frame.showImage(converter.convert(image));
