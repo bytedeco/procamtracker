@@ -497,7 +497,7 @@ public class TrackingWorker extends SwingWorker {
         }
         String infoLogString = "initial a = (";
         for (int i = 1; i < gainAmbientLight.length; i++) {
-            infoLogString += (float)gainAmbientLight[i];
+            infoLogString += Float.toString((float)gainAmbientLight[i]);
             if (i < gainAmbientLight.length-1) {
                 infoLogString += ", ";
             }
@@ -826,8 +826,8 @@ public class TrackingWorker extends SwingWorker {
                           "pyramidLevel  averageTime (ms)  averageIterations\n" +
                           "-------------------------------------------------\n";
         for (int i = 0; i < iterationTime.length; i++) {
-            double meanTime   = (double)iterationTime[i]/iterationCount[i];
-            double sqmeanTime = (double)iterationTime2[i]/iterationCount[i];
+            double meanTime   = iterationTime[i]/iterationCount[i];
+            double sqmeanTime = iterationTime2[i]/iterationCount[i];
             double meanIter   = (double)iterationCount[i]/framesCount;
             double sqmeanIter = (double)iterationCount2[i]/framesCount;
 
@@ -837,8 +837,8 @@ public class TrackingWorker extends SwingWorker {
             totalIteratingTime  += iterationTime [i];
             totalIterationCount += iterationCount[i];
         }
-        double meanTime   = (double)totalIteratingTime  /framesCount;
-        double sqmeanTime = (double)totalIteratingTime2 /framesCount;
+        double meanTime   = totalIteratingTime  /framesCount;
+        double sqmeanTime = totalIteratingTime2 /framesCount;
         double meanIter   = (double)totalIterationCount /framesCount;
         double sqmeanIter = (double)totalIterationCount2/framesCount;
 

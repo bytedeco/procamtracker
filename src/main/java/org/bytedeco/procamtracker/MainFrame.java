@@ -958,7 +958,6 @@ public class MainFrame extends javax.swing.JFrame implements
                     if (!myDirectory.isDirectory()) {
                         myDirectory = myDirectory.getParentFile();
                     }
-                    String path = myDirectory.getAbsolutePath();
 
                     String lafClassName = UIManager.getSystemLookAndFeelClassName();
                     ArrayList<String> otherArgs = new ArrayList<String>();
