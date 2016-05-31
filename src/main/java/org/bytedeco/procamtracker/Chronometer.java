@@ -94,13 +94,13 @@ public class Chronometer {
         chronoGraphics.setFont(bigFont);
         int x = (int)((roi.width -bounds.getWidth ())/2 - bounds.getX()),
             y = (int)((roi.height-bounds.getHeight())/2 - bounds.getY());
-        chronoGraphics.drawString(""+minutes,  x, y); x+=bigFontMetrics.stringWidth("0");
+        chronoGraphics.drawString(Long.toString(minutes),  x, y); x+=bigFontMetrics.stringWidth("0");
         chronoGraphics.drawString("′",  x, y);        x+=bigFontMetrics.stringWidth("′");
         chronoGraphics.drawString((seconds < 10 ?
                           "0" : "") + seconds, x, y); x+=bigFontMetrics.stringWidth("00");
         chronoGraphics.drawString("″",  x, y);        x+=bigFontMetrics.stringWidth("″");
         chronoGraphics.setFont(smallFont);
-        chronoGraphics.drawString(""+deciseconds, x, y);
+        chronoGraphics.drawString(Long.toString(deciseconds), x, y);
         if (roi.x < 0) {
             roi.x += image.width();
         }
