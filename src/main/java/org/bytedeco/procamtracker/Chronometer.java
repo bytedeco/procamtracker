@@ -38,6 +38,15 @@ import static org.bytedeco.javacpp.opencv_core.*;
  * @author Samuel Audet
  */
 public class Chronometer {
+    private Rectangle roi;
+    private long startTime;
+    private OpenCVFrameConverter converter;
+    private BufferedImage chronoImage;
+    private Graphics2D chronoGraphics;
+    private Font bigFont, smallFont;
+    private FontMetrics bigFontMetrics;
+    private Rectangle2D bounds;
+
     Chronometer(Rectangle roi, IplImage image) {
         this(roi, image, -1);
     }
@@ -68,15 +77,6 @@ public class Chronometer {
         chronoGraphics.setColor(Color.BLACK);
         chronoGraphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
     }
-
-    private Rectangle roi;
-    private long startTime;
-    private OpenCVFrameConverter converter;
-    private BufferedImage chronoImage;
-    private Graphics2D chronoGraphics;
-    private Font bigFont, smallFont;
-    private FontMetrics bigFontMetrics;
-    private Rectangle2D bounds;
 
     public void draw(IplImage image) {
         long time;
