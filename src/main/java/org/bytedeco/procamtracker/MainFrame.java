@@ -121,6 +121,49 @@ import static org.bytedeco.javacpp.opencv_core.*;
 public class MainFrame extends javax.swing.JFrame implements
         ExplorerManager.Provider, Lookup.Provider, PropertyChangeListener {
 
+    static File myDirectory;
+    final File DEFAULT_SETTINGS_FILE = new File("settings.pct");
+    CameraDevice    .Settings cameraSettings;
+    ProjectorDevice .Settings projectorSettings;
+    ObjectFinder    .Settings objectFinderSettings;
+    MarkerDetector  .Settings markerDetectorSettings;
+    GNImageAligner  .Settings alignerSettings;
+    HandMouse       .Settings handMouseSettings;
+    VirtualBall     .Settings virtualBallSettings;
+    RealityAugmentor.Settings realityAugmentorSettings;
+    TrackingWorker  .Settings trackingSettings;
+    File settingsFile = null;
+    MyTrackingWorker trackingWorker = null;
+    private ExplorerManager manager;
+    private Lookup lookup;
+    private InputOutput messagesio;
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JMenuItem aboutMenuItem;
+    private org.openide.explorer.view.BeanTreeView beanTreeView;
+    private javax.swing.JMenu helpMenu;
+    private javax.swing.JSplitPane horizontalSplitPane;
+    private javax.swing.JMenuBar menuBar;
+    private javax.swing.JSeparator menuSeparator2;
+    private org.openide.explorer.propertysheet.PropertySheetView propertySheetView;
+    private javax.swing.JMenuItem readmeMenuItem;
+    private javax.swing.JButton settingsLoadButton;
+    private javax.swing.JButton settingsLoadDefaultsButton;
+    private javax.swing.JMenuItem settingsLoadDefaultsMenuItem;
+    private javax.swing.JMenuItem settingsLoadMenuItem;
+    private javax.swing.JMenu settingsMenu;
+    private javax.swing.JMenuItem settingsSaveAsMenuItem;
+    private javax.swing.JButton settingsSaveButton;
+    private javax.swing.JMenuItem settingsSaveMenuItem;
+    private javax.swing.JLabel statusLabel;
+    private javax.swing.JToolBar toolBar;
+    private javax.swing.JToolBar.Separator toolBarSeparator1;
+    private javax.swing.JMenu trackingMenu;
+    private javax.swing.JButton trackingStartButton;
+    private javax.swing.JMenuItem trackingStartMenuItem;
+    private javax.swing.JButton trackingStopButton;
+    private javax.swing.JMenuItem trackingStopMenuItem;
+    private javax.swing.JSplitPane verticalSplitPane;
+
     /** Creates new form MainFrame */
     public MainFrame(String[] args) throws Exception {
         // same as before...
@@ -223,36 +266,92 @@ public class MainFrame extends javax.swing.JFrame implements
         beanTreeView.requestFocusInWindow();
     }
 
-    CameraDevice    .Settings cameraSettings;
-    ProjectorDevice .Settings projectorSettings;
-    ObjectFinder    .Settings objectFinderSettings;
-    MarkerDetector  .Settings markerDetectorSettings;
-    GNImageAligner  .Settings alignerSettings;
-    HandMouse       .Settings handMouseSettings;
-    VirtualBall     .Settings virtualBallSettings;
-    RealityAugmentor.Settings realityAugmentorSettings;
-    TrackingWorker  .Settings trackingSettings;
-    final File DEFAULT_SETTINGS_FILE = new File("settings.pct");
-    File settingsFile = null;
+    /**
+    * @param args the command line arguments
+    */
+    public static void main(final String args[]) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            // this is just a workaround for GTK and OpenCV, should be safe to ignore otherwise
+        }
 
-    private ExplorerManager manager;
-    private Lookup lookup;
+        try {
+            Threading.disableSingleThreading();
+            //System.setProperty("sun.java2d.opengl","false");
+            GLProfile.initSingleton();
+        } catch (Throwable t) { }
 
-    private InputOutput messagesio;
+        // try to init all frame grabbers here, because bad things
+        // happen if loading errors occur while we're in the GUI thread...
+        FrameGrabber.init();
+
+        EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                try {
+                    myDirectory = new File(MainFrame.class.getProtectionDomain().
+                            getCodeSource().getLocation().toURI());
+                    if (!myDirectory.isDirectory()) {
+                        myDirectory = myDirectory.getParentFile();
+                    }
+
+                    String lafClassName = UIManager.getSystemLookAndFeelClassName();
+                    ArrayList<String> otherArgs = new ArrayList<String>();
+                    for (int i = 0; i < args.length; i++) {
+                        if (args[i].equals("--laf") && i+1 < args.length) {
+                            lafClassName = args[i+1];
+                            i++;
+                        } else {
+                            otherArgs.add(args[i]);
+                        }
+                    }
+                    // "Ocean Look" would be javax.swing.plaf.metal.MetalLookAndFeel
+                    org.netbeans.swing.plaf.Startup.run(Class.forName(lafClassName), 0, null);
+
+                    // Add property editors from NetBeans
+                    String[] searchPath = PropertyEditorManager.getEditorSearchPath();
+                    String[] newSearchPath = new String[searchPath.length+1];
+                    newSearchPath[0] = "org.netbeans.beaninfo.editors";
+                    System.arraycopy(searchPath, 0, newSearchPath, 1, searchPath.length);
+                    PropertyEditorManager.setEditorSearchPath(newSearchPath);
+                    PropertyEditorManager.registerEditor(String[].class, StringArrayEditor.class);
+                    PropertyEditorManager.registerEditor(double[].class, DoubleArrayEditor.class);
+
+                    //Make sure we have nice window decorations.
+                    JFrame.setDefaultLookAndFeelDecorated(true);
+                    JDialog.setDefaultLookAndFeelDecorated(true);
+
+                    MainFrame w = new MainFrame(otherArgs.toArray(new String[0]));
+                    w.setLocationByPlatform(true);
+                    w.setVisible(true);
+
+                    w.messagesio = new NbIOProvider().getIO("Messages", new Action[0],
+                            IOContainer.getDefault());
+                    w.messagesio.select();
+                } catch (Exception ex) {
+                    Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE,
+                            "Could not start ProCamTracker", ex);
+                }
+            }
+        });
+    }
 
     // ...method as before and getLookup
     public ExplorerManager getExplorerManager() {
         return manager;
     }
+
     public Lookup getLookup() {
         return lookup;
     }
+
     // ...methods as before, but replace componentActivated and
     // componentDeactivated with e.g.:
     @Override public void addNotify() {
         super.addNotify();
         ExplorerUtils.activateActions(manager, true);
     }
+
     @Override public void removeNotify() {
         ExplorerUtils.activateActions(manager, false);
         super.removeNotify();
@@ -730,40 +829,6 @@ public class MainFrame extends javax.swing.JFrame implements
 
     }//GEN-LAST:event_settingsSaveAsMenuItemActionPerformed
 
-    class MyTrackingWorker extends TrackingWorker {
-        public MyTrackingWorker(MyTrackingWorker brother) {
-            super();
-            if (brother != null) {
-                this.cameraDevice = brother.cameraDevice;
-                this.projectorDevice = brother.projectorDevice;
-            }
-        }
-
-        @Override protected void done() {
-            super.done();
-
-            settingsMenu.setEnabled(true);
-//            trackingMenu.setEnabled(true);
-            trackingStartMenuItem.setEnabled(true);
-            trackingStopMenuItem.setEnabled(false);
-            settingsLoadDefaultsButton.setEnabled(true);
-            settingsLoadButton.setEnabled(true);
-            settingsSaveButton.setEnabled(true);
-            trackingStartButton.setEnabled(true);
-            trackingStopButton.setEnabled(false);
-            beanTreeView.setEnabled(true);
-            propertySheetView.setEnabled(true);
-
-            if (isCancelled()) {
-                statusLabel.setText("Tracking stopped.");
-                trackingWorker = null;
-            } else {
-                statusLabel.setText("Tracking done.");
-            }
-        }
-    }
-    MyTrackingWorker trackingWorker = null;
-
     private void trackingStartMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_trackingStartMenuItemActionPerformed
         if (trackingWorker == null || trackingWorker.getState() != StateValue.STARTED) {
             trackingWorker = new MyTrackingWorker(trackingWorker);
@@ -928,104 +993,38 @@ public class MainFrame extends javax.swing.JFrame implements
         trackingStopMenuItemActionPerformed(evt);
     }//GEN-LAST:event_trackingStopButtonActionPerformed
 
-    static File myDirectory;
-
-    /**
-    * @param args the command line arguments
-    */
-    public static void main(final String args[]) {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            // this is just a workaround for GTK and OpenCV, should be safe to ignore otherwise
+    class MyTrackingWorker extends TrackingWorker {
+        public MyTrackingWorker(MyTrackingWorker brother) {
+            super();
+            if (brother != null) {
+                this.cameraDevice = brother.cameraDevice;
+                this.projectorDevice = brother.projectorDevice;
+            }
         }
 
-        try {
-            Threading.disableSingleThreading();
-            //System.setProperty("sun.java2d.opengl","false");
-            GLProfile.initSingleton();
-        } catch (Throwable t) { }
+        @Override protected void done() {
+            super.done();
 
-        // try to init all frame grabbers here, because bad things
-        // happen if loading errors occur while we're in the GUI thread...
-        FrameGrabber.init();
+            settingsMenu.setEnabled(true);
+//            trackingMenu.setEnabled(true);
+            trackingStartMenuItem.setEnabled(true);
+            trackingStopMenuItem.setEnabled(false);
+            settingsLoadDefaultsButton.setEnabled(true);
+            settingsLoadButton.setEnabled(true);
+            settingsSaveButton.setEnabled(true);
+            trackingStartButton.setEnabled(true);
+            trackingStopButton.setEnabled(false);
+            beanTreeView.setEnabled(true);
+            propertySheetView.setEnabled(true);
 
-        EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                try {
-                    myDirectory = new File(MainFrame.class.getProtectionDomain().
-                            getCodeSource().getLocation().toURI());
-                    if (!myDirectory.isDirectory()) {
-                        myDirectory = myDirectory.getParentFile();
-                    }
-
-                    String lafClassName = UIManager.getSystemLookAndFeelClassName();
-                    ArrayList<String> otherArgs = new ArrayList<String>();
-                    for (int i = 0; i < args.length; i++) {
-                        if (args[i].equals("--laf") && i+1 < args.length) {
-                            lafClassName = args[i+1];
-                            i++;
-                        } else {
-                            otherArgs.add(args[i]);
-                        }
-                    }
-                    // "Ocean Look" would be javax.swing.plaf.metal.MetalLookAndFeel
-                    org.netbeans.swing.plaf.Startup.run(Class.forName(lafClassName), 0, null);
-
-                    // Add property editors from NetBeans
-                    String[] searchPath = PropertyEditorManager.getEditorSearchPath();
-                    String[] newSearchPath = new String[searchPath.length+1];
-                    newSearchPath[0] = "org.netbeans.beaninfo.editors";
-                    System.arraycopy(searchPath, 0, newSearchPath, 1, searchPath.length);
-                    PropertyEditorManager.setEditorSearchPath(newSearchPath);
-                    PropertyEditorManager.registerEditor(String[].class, StringArrayEditor.class);
-                    PropertyEditorManager.registerEditor(double[].class, DoubleArrayEditor.class);
-
-                    //Make sure we have nice window decorations.
-                    JFrame.setDefaultLookAndFeelDecorated(true);
-                    JDialog.setDefaultLookAndFeelDecorated(true);
-
-                    MainFrame w = new MainFrame(otherArgs.toArray(new String[0]));
-                    w.setLocationByPlatform(true);
-                    w.setVisible(true);
-
-                    w.messagesio = new NbIOProvider().getIO("Messages", new Action[0],
-                            IOContainer.getDefault());
-                    w.messagesio.select();
-                } catch (Exception ex) {
-                    Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE,
-                            "Could not start ProCamTracker", ex);
-                }
+            if (isCancelled()) {
+                statusLabel.setText("Tracking stopped.");
+                trackingWorker = null;
+            } else {
+                statusLabel.setText("Tracking done.");
             }
-        });
+        }
     }
-
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JMenuItem aboutMenuItem;
-    private org.openide.explorer.view.BeanTreeView beanTreeView;
-    private javax.swing.JMenu helpMenu;
-    private javax.swing.JSplitPane horizontalSplitPane;
-    private javax.swing.JMenuBar menuBar;
-    private javax.swing.JSeparator menuSeparator2;
-    private org.openide.explorer.propertysheet.PropertySheetView propertySheetView;
-    private javax.swing.JMenuItem readmeMenuItem;
-    private javax.swing.JButton settingsLoadButton;
-    private javax.swing.JButton settingsLoadDefaultsButton;
-    private javax.swing.JMenuItem settingsLoadDefaultsMenuItem;
-    private javax.swing.JMenuItem settingsLoadMenuItem;
-    private javax.swing.JMenu settingsMenu;
-    private javax.swing.JMenuItem settingsSaveAsMenuItem;
-    private javax.swing.JButton settingsSaveButton;
-    private javax.swing.JMenuItem settingsSaveMenuItem;
-    private javax.swing.JLabel statusLabel;
-    private javax.swing.JToolBar toolBar;
-    private javax.swing.JToolBar.Separator toolBarSeparator1;
-    private javax.swing.JMenu trackingMenu;
-    private javax.swing.JButton trackingStartButton;
-    private javax.swing.JMenuItem trackingStartMenuItem;
-    private javax.swing.JButton trackingStopButton;
-    private javax.swing.JMenuItem trackingStopMenuItem;
-    private javax.swing.JSplitPane verticalSplitPane;
     // End of variables declaration//GEN-END:variables
 
 }
