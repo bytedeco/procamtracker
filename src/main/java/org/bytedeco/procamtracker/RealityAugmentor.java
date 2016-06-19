@@ -79,6 +79,40 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  * @author Samuel Audet
  */
 public class RealityAugmentor {
+    private static final Logger logger = Logger.getLogger(RealityAugmentor.class.getName());
+    private Settings settings;
+    private ObjectSettings objectSettings = null;
+    private VirtualSettings virtualSettings = null;
+    private ObjectFinder  .Settings objectFinderSettings;
+    private MarkerDetector.Settings markerDetectorSettings;
+    private VirtualBall   .Settings virtualBallSettings;
+    private ProjectiveDevice camera, projector;
+    private int channels;
+    private double[] roiPts = null;
+    private MarkerDetector markerDetector = null;
+    private GraphicsDevice desktopScreen = null;
+    private Robot robot = null;
+    private BufferedImage handMouseCursor = null;
+    private FrameGrabber videoToProject = null;
+    private OpenCVFrameConverter.ToIplImage videoConverter = new OpenCVFrameConverter.ToIplImage();
+    private IplImage imageToProject = null, textureImage = null;
+    private Chronometer chronometer = null;
+    private VirtualBall virtualBall = null;
+    private ProjectiveTransformer composeWarper = new ProjectiveTransformer();
+    private ProjectiveTransformer.Parameters[] composeParameters = { composeWarper.createParameters() };
+    //private ProjectiveTransformer.Data[] composeData = { new ProjectiveTransformer.Data() };
+    private CvMat srcPts = CvMat.create(4, 1, CV_64F, 2), dstPts = CvMat.create(4, 1, CV_64F, 2);
+    private CvMat tempH  = CvMat.create(3, 3);
+    private CvPoint tempPts = new CvPoint(4), corners = new CvPoint(4), corners2 = new CvPoint(corners);
+    private IntPointer tempNPts = new IntPointer(1).put(4);
+    private CvRect roi = new CvRect(), maxroi = new CvRect();
+    private CvBox2D box = new CvBox2D();
+    private CvMat boxPts = CvMat.create(4, 1, CV_32F, 2);
+    private CvPoint2D32f boxPtsData = new CvPoint2D32f(boxPts.data_fl());
+    private double markerError   = 0;
+    private int markerErrorCount = 0;
+    private ExecutorService executor = Executors.newSingleThreadExecutor();
+    private Future<CvRect> future = null;
     public RealityAugmentor(Settings settings,
              ObjectFinder  .Settings objectFinderSettings,
              MarkerDetector.Settings markerDetectorSettings,
@@ -94,257 +128,29 @@ public class RealityAugmentor {
         this.channels  = channels;
     }
 
-    public static class Settings extends BaseSettings implements CleanBeanNode.ActionableBean {
-
-        @Override public ObjectSettings[] toArray() {
-            return (ObjectSettings[])toArray(new ObjectSettings[size()]);
-        }
-
-        public Action[] actions() {
-            return new Action[] { new AbstractAction("New ObjectSettings") {
-                public void actionPerformed(ActionEvent e) {
-                    ObjectSettings os = new ObjectSettings();
-                    os.setName("ObjectSettings " + size());
-                    add(os);
-                }
-            }};
-        }
-    }
-
-    public static enum RoiAcquisitionMethod { MOUSE_CLICKS, OBJECT_FINDER, MARKER_DETECTOR, WHOLE_FRAME, HALF_FRAME }
-
-    public static class ObjectSettings extends BaseSettings implements CleanBeanNode.ActionableBean {
-
-        String name = "ObjectSettings";
-        File textureImageFile = null;
-        RoiAcquisitionMethod roiAcquisitionMethod = RoiAcquisitionMethod.MOUSE_CLICKS;
-        boolean surfaceHasTexture = true;
-
-        @Override public String getName() {
-            return name;
-        }
-        public void setName(String name) {
-            firePropertyChange("name", this.name, this.name = name);
-        }
-
-        public File getTextureImageFile() {
-            return textureImageFile;
-        }
-        public void setTextureImageFile(File textureImageFile) {
-            this.textureImageFile = textureImageFile;
-        }
-        public String getTextureImageFilename() {
-            return textureImageFile == null ? "" : textureImageFile.getPath();
-        }
-        public void setTextureImageFilename(String textureImageFilename) {
-            this.textureImageFile = textureImageFilename == null ||
-                    textureImageFilename.length() == 0 ? null : new File(textureImageFilename);
-        }
-
-        public RoiAcquisitionMethod getRoiAcquisitionMethod() {
-            return roiAcquisitionMethod;
-        }
-        public void setRoiAcquisitionMethod(RoiAcquisitionMethod roiAcquisitionMethod) {
-            this.roiAcquisitionMethod = roiAcquisitionMethod;
-        }
-
-        public boolean isSurfaceHasTexture() {
-            return surfaceHasTexture;
-        }
-        public void setSurfaceHasTexture(boolean surfaceHasTexture) {
-            this.surfaceHasTexture = surfaceHasTexture;
-        }
-
-        @Override public VirtualSettings[] toArray() {
-            return (VirtualSettings[])toArray(new VirtualSettings[size()]);
-        }
-
-        public Action[] actions() {
-            return new Action[] {
-                new AbstractAction("New VirtualSettings") {
-                    public void actionPerformed(ActionEvent e) {
-                        VirtualSettings vs = new VirtualSettings();
-                        vs.setName("VirtualSettings " + size());
-                        add(vs);
-                    }
-                },
-                new AbstractAction("Delete") {
-                    public void actionPerformed(ActionEvent e) {
-                        getBeanContext().remove(ObjectSettings.this);
-                    }
-                }
-            };
-        }
-    }
-
-    public static enum ProjectionType { TRACKED, FIXED }
-
-    public static class VirtualSettings extends BaseChildSettings implements CleanBeanNode.ActionableBean {
-
-        String name = "VirtualSettings";
-        Rectangle objectHotSpot = new Rectangle();
-        int desktopScreenNumber = -1;
-        int desktopScreenWidth = 640;
-        int desktopScreenHeight = 452;
-        File projectorImageFile = null;
-        File projectorVideoFile = null;
-        ProjectionType projectionType = ProjectionType.TRACKED;
-        Rectangle chronometerBounds = new Rectangle(0, -50, 150, 50);
-        boolean virtualBallEnabled = false;
-
-        @Override public String getName() {
-            return name; 
-        }
-        public void setName(String name) {
-            firePropertyChange("name", this.name, this.name = name);
-        }
-
-        public Rectangle getObjectHotStop() {
-            return objectHotSpot;
-        }
-        public void setObjectHotStop(Rectangle objectHotSpot) {
-            this.objectHotSpot = objectHotSpot;
-        }
-
-        public int getDesktopScreenNumber() {
-            return desktopScreenNumber;
-        }
-        public void setDesktopScreenNumber(int desktopScreenNumber) {
-            this.desktopScreenNumber = desktopScreenNumber;
-        }
-
-        public int getDesktopScreenWidth() {
-            return desktopScreenWidth;
-        }
-        public void setDesktopScreenWidth(int desktopScreenWidth) {
-            this.desktopScreenWidth = desktopScreenWidth;
-        }
-
-        public int getDesktopScreenHeight() {
-            return desktopScreenHeight;
-        }
-        public void setDesktopScreenHeight(int desktopScreenHeight) {
-            this.desktopScreenHeight = desktopScreenHeight;
-        }
-
-        public File getProjectorImageFile() {
-            return projectorImageFile;
-        }
-        public void setProjectorImageFile(File projectorImageFile) {
-            this.projectorImageFile = projectorImageFile;
-        }
-        public String getProjectorImageFilename() {
-            return projectorImageFile == null ? "" : projectorImageFile.getPath();
-        }
-        public void setProjectorImageFilename(String projectorImageFilename) {
-            this.projectorImageFile = projectorImageFilename == null ||
-                    projectorImageFilename.length() == 0 ? null : new File(projectorImageFilename);
-        }
-
-        public File getProjectorVideoFile() {
-            return projectorVideoFile;
-        }
-        public void setProjectorVideoFile(File projectorVideoFile) {
-            this.projectorVideoFile = projectorVideoFile;
-        }
-        public String getProjectorVideoFilename() {
-            return projectorVideoFile == null ? "" : projectorVideoFile.getPath();
-        }
-        public void setProjectorVideoFilename(String projectorVideoFilename) {
-            this.projectorVideoFile = projectorVideoFilename == null ||
-                    projectorVideoFilename.length() == 0 ? null : new File(projectorVideoFilename);
-        }
-
-        public ProjectionType getProjectionType() {
-            return projectionType;
-        }
-        public void setProjectionType(ProjectionType projectionType) {
-            this.projectionType = projectionType;
-        }
-
-        public Rectangle getChronometerBounds() {
-            return chronometerBounds;
-        }
-        public void setChronometerBounds(Rectangle chronometerBounds) {
-            this.chronometerBounds = chronometerBounds;
-        }
-
-        public boolean isVirtualBallEnabled() {
-            return virtualBallEnabled;
-        }
-        public void setVirtualBallEnabled(boolean virtualBallEnabled) {
-            this.virtualBallEnabled = virtualBallEnabled;
-        }
-
-        public Action[] actions() {
-            return new Action[] { new AbstractAction("Delete") {
-                public void actionPerformed(ActionEvent e) {
-                    getBeanContext().remove(VirtualSettings.this);
-                }
-            }};
-        }
-    }
-
-    private Settings settings;
     public Settings getSettings() {
         return settings;
     }
+
     public void setSettings(Settings settings) {
         this.settings = settings;
     }
 
-    private ObjectSettings objectSettings = null;
     public ObjectSettings getObjectSettings() {
         return objectSettings;
     }
+
     public void setObjectSettings(ObjectSettings objectSettings) {
         this.objectSettings = objectSettings;
     }
 
-    private VirtualSettings virtualSettings = null;
     public VirtualSettings getVirtualSettings() {
         return virtualSettings;
     }
+
     public void setVirtualSettings(VirtualSettings virtualSettings) {
         this.virtualSettings = virtualSettings;
     }
-
-    private ObjectFinder  .Settings objectFinderSettings;
-    private MarkerDetector.Settings markerDetectorSettings;
-    private VirtualBall   .Settings virtualBallSettings;
-
-    private ProjectiveDevice camera, projector;
-    private int channels;
-
-    private double[] roiPts = null;
-    private MarkerDetector markerDetector = null;
-    private GraphicsDevice desktopScreen = null;
-    private Robot robot = null;
-    private BufferedImage handMouseCursor = null;
-    private FrameGrabber videoToProject = null;
-    private OpenCVFrameConverter.ToIplImage videoConverter = new OpenCVFrameConverter.ToIplImage();
-    private IplImage imageToProject = null, textureImage = null;
-    private Chronometer chronometer = null;
-    private VirtualBall virtualBall = null;
-
-    private ProjectiveTransformer composeWarper = new ProjectiveTransformer();
-    private ProjectiveTransformer.Parameters[] composeParameters = { composeWarper.createParameters() };
-    //private ProjectiveTransformer.Data[] composeData = { new ProjectiveTransformer.Data() };
-    private CvMat srcPts = CvMat.create(4, 1, CV_64F, 2), dstPts = CvMat.create(4, 1, CV_64F, 2);
-    private CvMat tempH  = CvMat.create(3, 3);
-    private CvPoint tempPts = new CvPoint(4), corners = new CvPoint(4), corners2 = new CvPoint(corners);
-    private IntPointer tempNPts = new IntPointer(1).put(4);
-    private CvRect roi = new CvRect(), maxroi = new CvRect();
-    private CvBox2D box = new CvBox2D();
-    private CvMat boxPts = CvMat.create(4, 1, CV_32F, 2);
-    private CvPoint2D32f boxPtsData = new CvPoint2D32f(boxPts.data_fl());
-    private double markerError   = 0;
-    private int markerErrorCount = 0;
-
-    private static final Logger logger = Logger.getLogger(RealityAugmentor.class.getName());
-
-    private ExecutorService executor = Executors.newSingleThreadExecutor();
-    private Future<CvRect> future = null;
 
     public void initVirtualSettings() throws Exception {
         desktopScreen = null;
@@ -453,12 +259,12 @@ public class RealityAugmentor {
             }
         } else if (virtualSettings.projectorImageFile != null) {
             // does not load alpha channel
-            imageToProject = channels == 4 ? 
+            imageToProject = channels == 4 ?
                     cvLoadImageRGBA(virtualSettings.projectorImageFile.getAbsolutePath()) :
                     cvLoadImage    (virtualSettings.projectorImageFile.getAbsolutePath(),
                             channels == 3 ? CV_LOAD_IMAGE_COLOR : CV_LOAD_IMAGE_GRAYSCALE);
             if (imageToProject == null) {
-                throw new Exception("Error: Could not load projectorImageFile named \"" + 
+                throw new Exception("Error: Could not load projectorImageFile named \"" +
                         virtualSettings.projectorImageFile + "\".");
             }
             Buffer buffer = imageToProject.createBuffer();
@@ -1087,5 +893,196 @@ public class RealityAugmentor {
         }
 
         return infoLogString;
+    }
+
+    public static enum RoiAcquisitionMethod { MOUSE_CLICKS, OBJECT_FINDER, MARKER_DETECTOR, WHOLE_FRAME, HALF_FRAME }
+
+    public static enum ProjectionType { TRACKED, FIXED }
+
+    public static class Settings extends BaseSettings implements CleanBeanNode.ActionableBean {
+
+        @Override public ObjectSettings[] toArray() {
+            return (ObjectSettings[])toArray(new ObjectSettings[size()]);
+        }
+
+        public Action[] actions() {
+            return new Action[] { new AbstractAction("New ObjectSettings") {
+                public void actionPerformed(ActionEvent e) {
+                    ObjectSettings os = new ObjectSettings();
+                    os.setName("ObjectSettings " + size());
+                    add(os);
+                }
+            }};
+        }
+    }
+
+    public static class ObjectSettings extends BaseSettings implements CleanBeanNode.ActionableBean {
+
+        String name = "ObjectSettings";
+        File textureImageFile = null;
+        RoiAcquisitionMethod roiAcquisitionMethod = RoiAcquisitionMethod.MOUSE_CLICKS;
+        boolean surfaceHasTexture = true;
+
+        @Override public String getName() {
+            return name;
+        }
+        public void setName(String name) {
+            firePropertyChange("name", this.name, this.name = name);
+        }
+
+        public File getTextureImageFile() {
+            return textureImageFile;
+        }
+        public void setTextureImageFile(File textureImageFile) {
+            this.textureImageFile = textureImageFile;
+        }
+        public String getTextureImageFilename() {
+            return textureImageFile == null ? "" : textureImageFile.getPath();
+        }
+        public void setTextureImageFilename(String textureImageFilename) {
+            this.textureImageFile = textureImageFilename == null ||
+                    textureImageFilename.length() == 0 ? null : new File(textureImageFilename);
+        }
+
+        public RoiAcquisitionMethod getRoiAcquisitionMethod() {
+            return roiAcquisitionMethod;
+        }
+        public void setRoiAcquisitionMethod(RoiAcquisitionMethod roiAcquisitionMethod) {
+            this.roiAcquisitionMethod = roiAcquisitionMethod;
+        }
+
+        public boolean isSurfaceHasTexture() {
+            return surfaceHasTexture;
+        }
+        public void setSurfaceHasTexture(boolean surfaceHasTexture) {
+            this.surfaceHasTexture = surfaceHasTexture;
+        }
+
+        @Override public VirtualSettings[] toArray() {
+            return (VirtualSettings[])toArray(new VirtualSettings[size()]);
+        }
+
+        public Action[] actions() {
+            return new Action[] {
+                new AbstractAction("New VirtualSettings") {
+                    public void actionPerformed(ActionEvent e) {
+                        VirtualSettings vs = new VirtualSettings();
+                        vs.setName("VirtualSettings " + size());
+                        add(vs);
+                    }
+                },
+                new AbstractAction("Delete") {
+                    public void actionPerformed(ActionEvent e) {
+                        getBeanContext().remove(ObjectSettings.this);
+                    }
+                }
+            };
+        }
+    }
+
+    public static class VirtualSettings extends BaseChildSettings implements CleanBeanNode.ActionableBean {
+
+        String name = "VirtualSettings";
+        Rectangle objectHotSpot = new Rectangle();
+        int desktopScreenNumber = -1;
+        int desktopScreenWidth = 640;
+        int desktopScreenHeight = 452;
+        File projectorImageFile = null;
+        File projectorVideoFile = null;
+        ProjectionType projectionType = ProjectionType.TRACKED;
+        Rectangle chronometerBounds = new Rectangle(0, -50, 150, 50);
+        boolean virtualBallEnabled = false;
+
+        @Override public String getName() {
+            return name;
+        }
+        public void setName(String name) {
+            firePropertyChange("name", this.name, this.name = name);
+        }
+
+        public Rectangle getObjectHotStop() {
+            return objectHotSpot;
+        }
+        public void setObjectHotStop(Rectangle objectHotSpot) {
+            this.objectHotSpot = objectHotSpot;
+        }
+
+        public int getDesktopScreenNumber() {
+            return desktopScreenNumber;
+        }
+        public void setDesktopScreenNumber(int desktopScreenNumber) {
+            this.desktopScreenNumber = desktopScreenNumber;
+        }
+
+        public int getDesktopScreenWidth() {
+            return desktopScreenWidth;
+        }
+        public void setDesktopScreenWidth(int desktopScreenWidth) {
+            this.desktopScreenWidth = desktopScreenWidth;
+        }
+
+        public int getDesktopScreenHeight() {
+            return desktopScreenHeight;
+        }
+        public void setDesktopScreenHeight(int desktopScreenHeight) {
+            this.desktopScreenHeight = desktopScreenHeight;
+        }
+
+        public File getProjectorImageFile() {
+            return projectorImageFile;
+        }
+        public void setProjectorImageFile(File projectorImageFile) {
+            this.projectorImageFile = projectorImageFile;
+        }
+        public String getProjectorImageFilename() {
+            return projectorImageFile == null ? "" : projectorImageFile.getPath();
+        }
+        public void setProjectorImageFilename(String projectorImageFilename) {
+            this.projectorImageFile = projectorImageFilename == null ||
+                    projectorImageFilename.length() == 0 ? null : new File(projectorImageFilename);
+        }
+
+        public File getProjectorVideoFile() {
+            return projectorVideoFile;
+        }
+        public void setProjectorVideoFile(File projectorVideoFile) {
+            this.projectorVideoFile = projectorVideoFile;
+        }
+        public String getProjectorVideoFilename() {
+            return projectorVideoFile == null ? "" : projectorVideoFile.getPath();
+        }
+        public void setProjectorVideoFilename(String projectorVideoFilename) {
+            this.projectorVideoFile = projectorVideoFilename == null ||
+                    projectorVideoFilename.length() == 0 ? null : new File(projectorVideoFilename);
+        }
+
+        public ProjectionType getProjectionType() {
+            return projectionType;
+        }
+        public void setProjectionType(ProjectionType projectionType) {
+            this.projectionType = projectionType;
+        }
+
+        public Rectangle getChronometerBounds() {
+            return chronometerBounds;
+        }
+        public void setChronometerBounds(Rectangle chronometerBounds) {
+            this.chronometerBounds = chronometerBounds;
+        }
+
+        public boolean isVirtualBallEnabled() {
+            return virtualBallEnabled;
+        }
+        public void setVirtualBallEnabled(boolean virtualBallEnabled) {
+            this.virtualBallEnabled = virtualBallEnabled;
+        }
+
+        public Action[] actions() {
+            return new Action[] { new AbstractAction("Delete") {
+                public void actionPerformed(ActionEvent e) {
+                    getBeanContext().remove(VirtualSettings.this);
+                }
+            }};
+        }
     }
 }
