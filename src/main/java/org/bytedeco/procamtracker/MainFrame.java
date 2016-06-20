@@ -259,7 +259,7 @@ public class MainFrame extends javax.swing.JFrame implements
     }
 
     public void propertyChange(PropertyChangeEvent evt) {
-        if (evt.getSource() == trackingWorker && evt.getPropertyName().equals("progress")) {
+        if (evt.getSource() == trackingWorker && "progress".equals(evt.getPropertyName())) {
             switch ((Integer)evt.getNewValue()) {
                 case TrackingWorker.INITIALIZING: statusLabel.setText("Initializing..."); break;
                 case TrackingWorker.TRACKING:     statusLabel.setText("Tracking...");     break;
@@ -895,8 +895,7 @@ public class MainFrame extends javax.swing.JFrame implements
         JDialog dialog = new JOptionPane(textPane, JOptionPane.PLAIN_MESSAGE).
                 createDialog(this, "About");
 
-        if (UIManager.getLookAndFeel().getClass().getName()
-                .equals("com.sun.java.swing.plaf.gtk.GTKLookAndFeel")) {
+        if ("com.sun.java.swing.plaf.gtk.GTKLookAndFeel".equals(UIManager.getLookAndFeel().getClass().getName())) {
             // under GTK, frameBackground is white, but rootPane color is OK...
             // but under Windows, the rootPane's color is funny...
             Color c = dialog.getRootPane().getBackground();
@@ -962,7 +961,7 @@ public class MainFrame extends javax.swing.JFrame implements
                     String lafClassName = UIManager.getSystemLookAndFeelClassName();
                     ArrayList<String> otherArgs = new ArrayList<String>();
                     for (int i = 0; i < args.length; i++) {
-                        if (args[i].equals("--laf") && i+1 < args.length) {
+                        if ("--laf".equals(args[i]) && i+1 < args.length) {
                             lafClassName = args[i+1];
                             i++;
                         } else {
