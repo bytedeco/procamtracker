@@ -42,7 +42,7 @@ public class DoubleArrayEditor extends StringArrayEditor {
 
     public static String[] doublesToStrings(double[] doubles) {
         if (doubles == null) {
-            return null;
+            return new String[] {};
         }
         String[] strings = new String[doubles.length];
         for (int i = 0; i < doubles.length; i++) {
@@ -53,7 +53,7 @@ public class DoubleArrayEditor extends StringArrayEditor {
 
     public static double[] stringsToDoubles(String[] strings) {
         if (strings == null) {
-            return null;
+            return new double[] {};
         }
         double[] doubles = new double[strings.length];
         for (int i = 0; i < strings.length; i++) {
