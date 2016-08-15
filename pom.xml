@@ -5,7 +5,6 @@
   <groupId>org.bytedeco</groupId>
   <artifactId>procamtracker</artifactId>
   <version>1.2</version>
-  <packaging>jar</packaging>
 
   <name>ProCamTracker</name>
   <description>Markerless Interactive Augmented Reality with a Projector and a Color Camera</description>
