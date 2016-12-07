@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.bytedeco</groupId>
   <artifactId>procamtracker</artifactId>
-  <version>1.2</version>
+  <version>1.3</version>
 
   <name>ProCamTracker</name>
   <description>Markerless Interactive Augmented Reality with a Projector and a Color Camera</description>
@@ -56,7 +56,7 @@
   <dependencies>
     <dependency>
       <groupId>org.bytedeco</groupId>
-      <artifactId>javacv</artifactId>
+      <artifactId>javacv-platform</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -253,7 +253,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>2.6</version>
+        <version>3.0.2</version>
         <configuration>
           <archive>
             <manifest>
@@ -262,7 +262,7 @@
             </manifest>
             <manifestEntries>
               <!-- <addClasspath/> is broken: http://jira.codehaus.org/browse/MJAR-61 -->
-              <Class-Path>javacpp.jar javacv.jar gluegen-rt.jar gluegen-rt-natives-linux-amd64.jar gluegen-rt-natives-macosx-universal.jar gluegen-rt-natives-windows-amd64.jar jocl.jar jocl-natives-linux-amd64.jar jocl-natives-macosx-universal.jar jocl-natives-windows-amd64.jar jogl-all.jar jogl-all-natives-linux-amd64.jar jogl-all-natives-macosx-universal.jar jogl-all-natives-windows-amd64.jar org-netbeans-bootstrap.jar org-netbeans-core-startup.jar org-netbeans-core.jar org-netbeans-core-output2.jar org-netbeans-swing-plaf.jar org-openide-actions.jar org-openide-awt.jar org-openide-dialogs.jar org-openide-explorer.jar org-openide-filesystems.jar org-openide-io.jar org-openide-modules.jar org-openide-nodes.jar org-openide-util.jar org-openide-util-lookup.jar org-openide-loaders.jar org-netbeans-modules-options-keymap.jar</Class-Path>
+              <Class-Path>javacpp.jar javacv-platform.jar gluegen-rt.jar gluegen-rt-natives-linux-amd64.jar gluegen-rt-natives-macosx-universal.jar gluegen-rt-natives-windows-amd64.jar jocl.jar jocl-natives-linux-amd64.jar jocl-natives-macosx-universal.jar jocl-natives-windows-amd64.jar jogl-all.jar jogl-all-natives-linux-amd64.jar jogl-all-natives-macosx-universal.jar jogl-all-natives-windows-amd64.jar org-netbeans-bootstrap.jar org-netbeans-core-startup.jar org-netbeans-core.jar org-netbeans-core-output2.jar org-netbeans-swing-plaf.jar org-openide-actions.jar org-openide-awt.jar org-openide-dialogs.jar org-openide-explorer.jar org-openide-filesystems.jar org-openide-io.jar org-openide-modules.jar org-openide-nodes.jar org-openide-util.jar org-openide-util-lookup.jar org-openide-loaders.jar org-netbeans-modules-options-keymap.jar</Class-Path>
               <Name>org/bytedeco/procamtracker/</Name>
               <Implementation-Title>${project.name}</Implementation-Title>
               <Implementation-Vendor>Samuel Audet</Implementation-Vendor>
@@ -283,7 +283,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.5.5</version>
+        <version>3.0.0</version>
         <configuration>
           <descriptors>
             <descriptor>src/main/assembly/bin.xml</descriptor>
@@ -301,7 +301,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-source-plugin</artifactId>
-        <version>2.4</version>
+        <version>3.0.1</version>
         <executions>
           <execution>
             <id>attach-source</id>
@@ -313,7 +313,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>2.10.3</version>
+        <version>2.10.4</version>
         <executions>
           <execution>
             <id>attach-javadocs</id>
