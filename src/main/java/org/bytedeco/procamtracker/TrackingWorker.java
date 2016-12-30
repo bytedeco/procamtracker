@@ -200,7 +200,6 @@ public class TrackingWorker extends SwingWorker {
         public ProjectorBuffer(IplImage template, boolean allocateCL) {
             if (allocateCL) {
                 image = IplImage.createCompatible(template);
-                //image = contextCL.createPinnedIplImage(template.width(), template.height(), template.depth(), template.nChannels());
                 imageCL = contextCL.createCLImageFrom(image);
             } else {
                 image = IplImage.createCompatible(template);
@@ -320,8 +319,6 @@ public class TrackingWorker extends SwingWorker {
                     cvResetImageROI(grabbedImage);
                     contextCL.remap(grabbedImageCL, undistortedCameraImageCL,
                             cameraMapxCL, cameraMapyCL, frameGrabber.getSensorPattern());
-//contextCL.readImage(undistortedCameraImageCL, cameraInitFloatImages[0], true);
-//monitorWindows[1].showImage(cameraInitFloatImages[0], true);
                     if (aligner != null) {
                         ((GNImageAlignerCL)aligner).setTargetImageCL(undistortedCameraImageCL);
                     }
@@ -355,7 +352,6 @@ public class TrackingWorker extends SwingWorker {
                     contextCL.acquireGLObject(distortedProjectorImageCL);
                     contextCL.remap(pb.imageCL, distortedProjectorImageCL, projectorMapxCL, projectorMapyCL);
                     contextCL.releaseGLObject(distortedProjectorImageCL);
-                    //contextCL.finish();
                     ((GLCanvasFrame)projectorFrame).showImage(distortedProjectorImageCL.getGLObjectID());
                 } else {
                     cvResetImageROI(distortedProjectorImage);
@@ -370,7 +366,6 @@ public class TrackingWorker extends SwingWorker {
             }
 
             if (aligner != null) {
-//System.out.println(frameGrabber.getDelayedTime());
                 long prevDelayedTime = frameGrabber.getDelayedTime();
                 frameGrabber.delayedGrab(trackingSettings.proCamPhaseShift * 1000);
                 if (prevDelayedTime > (trackingSettings.proCamPhaseShift +
@@ -460,7 +455,6 @@ public class TrackingWorker extends SwingWorker {
         roiPts = realityAugmentor.acquireRoi(monitorWindows == null ? null : monitorWindows[0],
                 trackingSettings.getMonitorWindowsScale(), cameraTempInit, 0);
         if (roiPts == null) {
-            //throw new Exception("Error: Could not acquire the ROI.");
             return false;
         }
         final RealityAugmentor.ObjectSettings objectSettings = realityAugmentor.getObjectSettings();
@@ -475,10 +469,6 @@ public class TrackingWorker extends SwingWorker {
             cvResetImageROI(cameraInitFloatImages[i]);
             cvConvertScale(undistortedCameraImage, cameraInitFloatImages[i],
                     1.0/undistortedCameraImage.highValue(), 0);
-
-//            IplImage monitorImage = getMonitorImage(cameraInitFloatImages[i], null, minLevel);
-//            CanvasFrame.global.showImage(monitorImage);
-//            CanvasFrame.global.waitKey();
 
             if (frameRecorder != null) {
                 Frame frame = recorderConverter.convert(undistortedCameraImage);
@@ -579,9 +569,6 @@ public class TrackingWorker extends SwingWorker {
 
         long timeMax = trackingSettings.getIteratingTimeMax()*1000000;
         double[] delta = new double[parameters.size()+1];
-//        int searchLength = alignerSettings.getLineSearch().length;
-//        long[][] iterationTime = new long[maxLevel+1][searchLength];
-//        int[][] iterationCount = new int [maxLevel+1][searchLength];
         double[] iterationTime   = new double[maxLevel+1];
         double[] iterationTime2  = new double[maxLevel+1];
         int[] iterationCount  = new int[maxLevel+1];
@@ -602,14 +589,11 @@ public class TrackingWorker extends SwingWorker {
             int[] iterationsPerLevel = new int[maxLevel+1];
             while (!converged) {
                 int p = aligner.getPyramidLevel();
-//                int l = aligner.getLastLinePosition();
 
                 long iterationStartTime = System.nanoTime();
                 converged = aligner.iterate(delta);
                 long iterationEndTime = System.nanoTime();
 
-//                iterationTime[p][l] += iterationEndTime - iterationStartTime;
-//                iterationCount[p][l]++;
                 long time = iterationEndTime - iterationStartTime;
                 iteratingTime += time;
                 iterationsPerLevel[p]++;
@@ -632,7 +616,6 @@ public class TrackingWorker extends SwingWorker {
             totalIterationCount2 += iterations*iterations;
 
             parameters = (ProCamTransformer.Parameters)aligner.getParameters();
-//System.out.println(parameters);
 
             long auditTime = System.nanoTime();
             // reset to previous values outlying gain and ambient light values
@@ -652,7 +635,6 @@ public class TrackingWorker extends SwingWorker {
                 }
                 aligner.setParameters(parameters);
             }
-//System.out.println(parameters);
 
             // if it looks like we had a better estimate before, switch back
             if (trackingSettings.pyramidLevelAudit >= 0) {
@@ -669,8 +651,6 @@ public class TrackingWorker extends SwingWorker {
                 }
             }
 
-//System.out.println(aligner.getOutlierCount() + " " + aligner.getPixelCount() +
-//        " " + (float)aligner.getOutlierCount()/aligner.getPixelCount());
             if ((trackingSettings.outlierRatioMax > 0 && aligner.getOutlierCount() >=
                      trackingSettings.outlierRatioMax * aligner.getPixelCount())) {
                 if (++lostCount > 1) {
@@ -695,20 +675,6 @@ public class TrackingWorker extends SwingWorker {
                 }
                 CvRect roi = aligner.getRoi();
                 double[] roiPts = aligner.getTransformedRoiPts();
-
-//                //int w = cameraDevice.imageWidth, h = cameraDevice.imageHeight;
-//                //CvRect roi = cvRect(0, 0, w, h);
-//                //double[] roiPts = { 0.0, 0.0,  w, 0.0,  w, h,  0.0, h };
-//                double vx = roiPts[2] - roiPts[0];
-//                double vy = roiPts[3] - roiPts[1];
-//                CvPoint points = new CvPoint((byte)(16 - p),
-//                        roiPts[0] +   vx/3, roiPts[1] +   vy/3,
-//                        roiPts[0] + 2*vx/3, roiPts[1] + 2*vy/3,
-//                        (roiPts[0]+roiPts[2]+roiPts[4]+roiPts[6])/4,
-//                        (roiPts[1]+roiPts[3]+roiPts[5]+roiPts[7])/4);
-//                cvFillConvexPoly(images[3], points, 3, cvScalarAll(0.2), 8, 16);
-//                //cvSet(images[4], CvScalar.WHITE);
-
                 handMouse.update(images, p, roi, roiPts);
             }
 
@@ -809,18 +775,6 @@ public class TrackingWorker extends SwingWorker {
 
         double totalIteratingTime  = 0;
         int    totalIterationCount = 0;
-//        infoLogString = "\nStatistics\n" +
-//                          "==========\n" +
-//                          "[pyramidLevel, lineSearchIndex] averageTime averageIterations\n";
-//        for (int i = 0; i < iterationTime.length; i++) {
-//            for (int j = 0; j < iterationTime[i].length; j++) {
-//                infoLogString += "[" + i + ", " + j + "] " + (iterationCount[i][j] == 0 ? 0 :
-//                    (float)iterationTime[i][j]/iterationCount[i][j] + " " +
-//                    (float)iterationCount[i][j]/framesCount) + "\n";
-//                totalIterations += iterationCount[i][j];
-//            }
-//        }
-//        infoLogString += "totalAverageIterations = " + (float)totalIterations/framesCount;
         infoLogString = "\nalignmentStatistics\n" +
                           "===================\n" +
                           "pyramidLevel  averageTime (ms)  averageIterations\n" +
