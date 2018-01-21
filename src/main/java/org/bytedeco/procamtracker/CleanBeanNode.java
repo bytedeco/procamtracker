@@ -85,7 +85,7 @@ public class CleanBeanNode<T> extends BeanNode<T> {
         if (o instanceof ActionableBean) {
             return ((ActionableBean)o).actions();
         } else {
-            return null;
+            return new Action[] {};
         }
     }
 

@@ -625,7 +625,7 @@ public class RealityAugmentor {
         if (markersin == null || markersin.length == 0) {
 //            throw new Exception("Error: MarkerDetector detected no markers in \"" +
 //                    settings.textureImageFile + "\".");
-            return null;
+            return new double[] {};
         }
         MarkedPlane markedPlane = new MarkedPlane(textureImage.width(), textureImage.height(), markersin, 1);
 
@@ -634,7 +634,7 @@ public class RealityAugmentor {
         if (markersout == null || markersout.length == 0 ||
                 markedPlane.getTotalWarp(markersout, tempH, true) == Double.POSITIVE_INFINITY) {
 //            throw new Exception("Error: MarkerDetector failed to match markers in the grabbed image.");
-            return null;
+            return new double[] {};
         }
         dstPts.put(0.0, 0.0,  textureImage.width(), 0.0,
                 textureImage.width(), textureImage.height(),  0.0, textureImage.height());
