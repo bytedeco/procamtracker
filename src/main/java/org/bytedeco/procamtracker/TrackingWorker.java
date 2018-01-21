@@ -1013,9 +1013,10 @@ public class TrackingWorker extends SwingWorker {
                 System.gc();
                 Pointer.deallocateReferences();
             }
-        } catch (Throwable t) {
+        } catch (Exception e) {
+            Throwable t = null;
             if (!isCancelled()) {
-                while (t.getCause() != null) { t = t.getCause(); }
+                while (e.getCause() != null) { t = e.getCause(); }
                 logger.log(Level.SEVERE, "Could not perform tracking.", t);
                 cancel(false);
             }

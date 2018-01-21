@@ -434,7 +434,7 @@ public class RealityAugmentor {
             }
             try {
                 videoToProject = new FFmpegFrameGrabber(virtualSettings.projectorVideoFile);
-            } catch (Throwable t) {
+            } catch (Exception e) {
                 videoToProject = new OpenCVFrameGrabber(virtualSettings.projectorVideoFile);
             }
             if (videoToProject != null) {
