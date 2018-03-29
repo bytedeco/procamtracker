@@ -9,11 +9,13 @@ ProCamTracker is a user-friendly computer application to turn a perfectly normal
 
 This method requires a geometrically and color calibrated projector-camera system. To perform the calibration, I recommend [ProCamCalib](https://github.com/bytedeco/procamcalib), a tool I previously released for that purpose.
 
+More information at http://www.ok.sc.e.titech.ac.jp/res/PCS/research/procamtracker/
+
 
 Downloads
 ---------
- * ProCamTracker 1.4 binary archive  [procamtracker-1.4-bin.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/1.4/procamtracker-1.4-bin.zip) (205 MB)
- * ProCamTracker 1.4 source archive  [procamtracker-1.4-src.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/1.4/procamtracker-1.4-src.zip) (68 KB)
+ * ProCamTracker 1.4.1 binary archive  [procamtracker-1.4.1-bin.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/1.4.1/procamtracker-1.4.1-bin.zip) (229 MB)
+ * ProCamTracker 1.4.1 source archive  [procamtracker-1.4.1-src.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/1.4.1/procamtracker-1.4.1-src.zip) (68 KB)
 
 The binary archive contains builds for Linux, Mac OS X, and Windows.
 
@@ -26,7 +28,7 @@ Please install the following before running ProCamTracker:
 
  * An implementation of Java SE 7 or newer:
    * OpenJDK  http://openjdk.java.net/install/  or
-   * Sun JDK  http://www.oracle.com/technetwork/java/javase/downloads/  or
+   * Oracle JDK  http://www.oracle.com/technetwork/java/javase/downloads/  or
    * IBM JDK  http://www.ibm.com/developerworks/java/jdk/
 
 As well as the following to enable processing with OpenCL and OpenGL:
@@ -69,9 +71,9 @@ Source Code
 I make all the source code available on GitHub at https://github.com/bytedeco/procamtracker . You will also need the following to modify and build the application:
 
  * A C/C++ compiler
- * JavaCPP 1.4  https://github.com/bytedeco/javacpp
- * JavaCV  1.4  https://github.com/bytedeco/javacv
- * OpenCV 3.4.0  http://sourceforge.net/projects/opencvlibrary/files/
+ * JavaCPP 1.4.1  https://github.com/bytedeco/javacpp
+ * JavaCV  1.4.1  https://github.com/bytedeco/javacv
+ * OpenCV 3.4.1  http://sourceforge.net/projects/opencvlibrary/files/
  * FFmpeg 3.4.x  http://ffmpeg.org/download.html
  * ARToolKitPlus 2.3.x  https://launchpad.net/artoolkitplus
  * NetBeans 8.0  http://netbeans.org/downloads/
