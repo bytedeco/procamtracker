@@ -14,8 +14,8 @@ More information at http://www.ok.sc.e.titech.ac.jp/res/PCS/research/procamtrack
 
 Downloads
 ---------
- * ProCamTracker 1.4.2 binary archive  [procamtracker-1.4.2-bin.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/1.4.2/procamtracker-1.4.2-bin.zip) (264 MB)
- * ProCamTracker 1.4.2 source archive  [procamtracker-1.4.2-src.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/1.4.2/procamtracker-1.4.2-src.zip) (68 KB)
+ * ProCamTracker 1.4.3 binary archive  [procamtracker-1.4.3-bin.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/1.4.3/procamtracker-1.4.3-bin.zip) (269 MB)
+ * ProCamTracker 1.4.3 source archive  [procamtracker-1.4.3-src.zip](http://search.maven.org/remotecontent?filepath=org/bytedeco/procamtracker/1.4.3/procamtracker-1.4.3-src.zip) (68 KB)
 
 The binary archive contains builds for Linux, Mac OS X, and Windows.
 
@@ -71,9 +71,9 @@ Source Code
 I make all the source code available on GitHub at https://github.com/bytedeco/procamtracker . You will also need the following to modify and build the application:
 
  * A C/C++ compiler
- * JavaCPP 1.4.2  https://github.com/bytedeco/javacpp
- * JavaCV  1.4.2  https://github.com/bytedeco/javacv
- * OpenCV 3.4.2  http://sourceforge.net/projects/opencvlibrary/files/
+ * JavaCPP 1.4.3  https://github.com/bytedeco/javacpp
+ * JavaCV  1.4.3  https://github.com/bytedeco/javacv
+ * OpenCV 3.4.3  http://sourceforge.net/projects/opencvlibrary/files/
  * FFmpeg 4.0.x  http://ffmpeg.org/download.html
  * ARToolKitPlus 2.3.x  https://launchpad.net/artoolkitplus
  * NetBeans 8.0  http://netbeans.org/downloads/
