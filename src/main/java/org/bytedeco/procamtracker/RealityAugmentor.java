@@ -456,7 +456,7 @@ public class RealityAugmentor {
             imageToProject = channels == 4 ? 
                     cvLoadImageRGBA(virtualSettings.projectorImageFile.getAbsolutePath()) :
                     cvLoadImage    (virtualSettings.projectorImageFile.getAbsolutePath(),
-                            channels == 3 ? CV_LOAD_IMAGE_COLOR : CV_LOAD_IMAGE_GRAYSCALE);
+                            channels == 3 ? IMREAD_COLOR : IMREAD_GRAYSCALE);
             if (imageToProject == null) {
                 throw new Exception("Error: Could not load projectorImageFile named \"" + 
                         virtualSettings.projectorImageFile + "\".");
