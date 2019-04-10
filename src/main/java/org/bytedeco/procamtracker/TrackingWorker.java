@@ -60,9 +60,12 @@ import org.bytedeco.javacv.ProjectorDevice;
 import org.bytedeco.javacv.ReflectanceInitializer;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 
-import static org.bytedeco.javacpp.avutil.*;
-import static org.bytedeco.javacpp.opencv_core.*;
-import static org.bytedeco.javacpp.opencv_imgproc.*;
+import org.bytedeco.ffmpeg.avutil.*;
+import org.bytedeco.opencv.opencv_core.*;
+import org.bytedeco.opencv.opencv_imgproc.*;
+import static org.bytedeco.ffmpeg.global.avutil.*;
+import static org.bytedeco.opencv.global.opencv_core.*;
+import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
 /**
  *
