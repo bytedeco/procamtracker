@@ -14,7 +14,7 @@ More information at http://www.ok.sc.e.titech.ac.jp/res/PCS/research/procamtrack
 
 Downloads
 ---------
-Archives containing JAR files are available as [releases](https://github.com/bytedeco/procamcalib/releases). The binary archive contains builds for Linux, Mac OS X, and Windows.
+Archives containing JAR files are available as [releases](https://github.com/bytedeco/procamtracker/releases). The binary archive contains builds for Linux, Mac OS X, and Windows.
 
 
 Required Software
